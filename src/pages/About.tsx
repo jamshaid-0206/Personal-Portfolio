@@ -165,7 +165,7 @@ export default function About() {
 
               {/* LinkedIn */}
               <a
-                href="https://github.com/jamshaid-0206"
+                href="https://www.linkedin.com/in/jamshaidghafoor/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 p-3 border border-border rounded-sm hover:bg-accent text-foreground transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
