@@ -315,6 +315,66 @@ My focus is on building:
 * User-Centric Experiences
 
 ---
+# 🌐 Live Demo
+
+### 🚀 Experience the Portfolio Live
+
+🔗 **Portfolio Website**
+
+https://personal-portfolio-omega-two-96.vercel.app/
+
+Explore the complete interactive experience including:
+
+* Matrix-inspired hero section
+* Advanced animations
+* Responsive design
+* Project case studies
+* Interactive portfolio gallery
+* Contact system
+* Modern UI/UX design
+
+---
+
+# 📸 Preview
+
+<p align="center">
+  <a href="https://personal-portfolio-omega-two-96.vercel.app/">
+    <img src="https://img.shields.io/badge/LIVE-DEMO-00FF41?style=for-the-badge&logo=vercel&logoColor=black" />
+  </a>
+</p>
+
+---
+
+# 🔗 Links
+
+### 🌐 Portfolio
+
+https://personal-portfolio-omega-two-96.vercel.app/
+
+### 💻 GitHub
+
+https://github.com/jamshaid-0206
+
+### 📧 Email
+
+[jamshedghafoor174@gmail.com](mailto:jamshedghafoor174@gmail.com)
+
+### 📍 Location
+
+Islamabad, Pakistan
+
+---
+
+<div align="center">
+
+## 🚀 Ready to Build Something Amazing?
+
+Whether it's a web application, mobile app, full-stack platform, or innovative digital experience, let's bring your ideas to life.
+
+### ⭐ If you like this project, don't forget to star the repository.
+
+</div>
+
 
 # 📬 Contact
 
