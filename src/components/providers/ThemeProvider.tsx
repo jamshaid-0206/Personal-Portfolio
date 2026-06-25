@@ -14,7 +14,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('portfolio-theme');
     if (saved === 'light' || saved === 'dark') return saved;
-    return 'dark'; // default to dark
+    // Respect system preference
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return 'dark'; // default fallback to dark
   });
 
   useEffect(() => {
@@ -25,11 +29,31 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
+    if (newTheme === theme) return;
+    if (
+      typeof window !== 'undefined' &&
+      'startViewTransition' in document
+    ) {
+      (document as any).startViewTransition(() => {
+        setThemeState(newTheme);
+      });
+    } else {
+      setThemeState(newTheme);
+    }
   };
 
   const toggleTheme = () => {
-    setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    if (
+      typeof window !== 'undefined' &&
+      'startViewTransition' in document
+    ) {
+      (document as any).startViewTransition(() => {
+        setThemeState(nextTheme);
+      });
+    } else {
+      setThemeState(nextTheme);
+    }
   };
 
   return (

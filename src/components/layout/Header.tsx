@@ -5,16 +5,17 @@ import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useScrollPosition } from '../../hooks/useScrollPosition';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '../../lib/utils';
+import { useTheme } from '../providers/ThemeProvider';
 
 // Premium morphing hamburger icon component
-function HamburgerIcon({ isOpen, isTransparent }: { isOpen: boolean; isTransparent: boolean }) {
+function HamburgerIcon({ isOpen, isTransparent, isLight }: { isOpen: boolean; isTransparent: boolean; isLight: boolean }) {
   return (
     <div className="w-5 h-4 flex flex-col justify-between items-center relative cursor-pointer select-none">
       <motion.span
         animate={isOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }}
         className={cn(
           "w-5 h-[1.5px] block origin-center absolute top-0 transition-colors",
-          isTransparent ? "bg-white" : "bg-foreground"
+          isTransparent ? (isLight ? "bg-zinc-900" : "bg-white") : "bg-foreground"
         )}
         transition={{ duration: 0.25, ease: "easeInOut" }}
       />
@@ -22,7 +23,7 @@ function HamburgerIcon({ isOpen, isTransparent }: { isOpen: boolean; isTranspare
         animate={isOpen ? { opacity: 0, scale: 0.8 } : { opacity: 1, scale: 1 }}
         className={cn(
           "w-5 h-[1.5px] block origin-center absolute top-[7px] transition-colors",
-          isTransparent ? "bg-white" : "bg-foreground"
+          isTransparent ? (isLight ? "bg-zinc-900" : "bg-white") : "bg-foreground"
         )}
         transition={{ duration: 0.2, ease: "easeInOut" }}
       />
@@ -30,7 +31,7 @@ function HamburgerIcon({ isOpen, isTransparent }: { isOpen: boolean; isTranspare
         animate={isOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }}
         className={cn(
           "w-5 h-[1.5px] block origin-center absolute top-[14px] transition-colors",
-          isTransparent ? "bg-white" : "bg-foreground"
+          isTransparent ? (isLight ? "bg-zinc-900" : "bg-white") : "bg-foreground"
         )}
         transition={{ duration: 0.25, ease: "easeInOut" }}
       />
@@ -39,6 +40,8 @@ function HamburgerIcon({ isOpen, isTransparent }: { isOpen: boolean; isTranspare
 }
 
 export function Header() {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const scrollY = useScrollPosition();
   const location = useLocation();
   const shouldReduceMotion = useReducedMotion();
@@ -92,8 +95,8 @@ export function Header() {
         className={cn(
           "fixed top-0 inset-x-0 h-16 z-50 flex items-center transition-all duration-500",
           isTransparent 
-            ? "bg-transparent text-white border-b border-transparent" 
-            : "bg-background/90 backdrop-blur-lg border-b border-border shadow-sm text-foreground"
+            ? (isLight ? "bg-transparent text-zinc-900 border-b border-transparent" : "bg-transparent text-white border-b border-transparent") 
+            : "bg-white/95 dark:bg-zinc-950/95 backdrop-blur-lg border-b border-zinc-200 dark:border-zinc-800/80 shadow-sm text-zinc-900 dark:text-white"
         )}
       >
         <div className="w-full max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between">
@@ -107,15 +110,21 @@ export function Header() {
           >
             <Link 
               to="/" 
+              onDoubleClick={(e) => {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent('logo_double_click'));
+              }}
               className={cn(
-                "text-sm sm:text-base md:text-lg font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-4 rounded-sm",
-                isTransparent ? "hover:text-emerald-300" : "hover:text-emerald-500"
+                "text-sm sm:text-base md:text-lg font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-4 rounded-sm transition-colors",
+                isTransparent 
+                  ? (isLight ? "hover:text-emerald-600 text-zinc-900" : "hover:text-emerald-300 text-white") 
+                  : "hover:text-emerald-500 dark:hover:text-emerald-400 text-zinc-900 dark:text-white"
               )}
             >
               JAMSHAID GHAFOOR
             </Link>
           </motion.div>
-
+ 
           {/* Desktop Navigation Row */}
           <nav className="hidden md:flex items-center gap-8 text-sm tracking-widest font-light">
             <ul className="flex items-center gap-8">
@@ -124,7 +133,7 @@ export function Header() {
                   link.path === '/' 
                     ? location.pathname === '/' 
                     : location.pathname.startsWith(link.path);
-
+ 
                 return (
                   <motion.li 
                     key={link.path}
@@ -136,15 +145,19 @@ export function Header() {
                     <Link
                       to={link.path}
                       className={cn(
-                        "hover:text-foreground transition-colors py-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-4 rounded-sm",
-                        isActive ? "font-medium text-foreground" : "text-muted-foreground",
-                        isTransparent && !isActive && "text-white/70 hover:text-white",
-                        isTransparent && isActive && "text-white"
+                        "transition-colors py-1 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-4 rounded-sm",
+                        isTransparent 
+                          ? (isActive 
+                              ? (isLight ? "font-semibold text-zinc-900" : "font-medium text-white") 
+                              : (isLight ? "text-zinc-600 hover:text-zinc-900" : "text-white/70 hover:text-white"))
+                          : (isActive
+                              ? "font-semibold text-zinc-900 dark:text-white"
+                              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white")
                       )}
                     >
                       {link.label}
                     </Link>
-
+ 
                     {/* Sliding active path underline indicators */}
                     {isActive && (
                       <motion.div
@@ -156,7 +169,9 @@ export function Header() {
                         }
                         className={cn(
                           "absolute -bottom-1 inset-x-0 h-px",
-                          isTransparent ? "bg-white" : "bg-foreground"
+                          isTransparent 
+                            ? (isLight ? "bg-zinc-900" : "bg-white") 
+                            : "bg-zinc-900 dark:bg-white"
                         )}
                       />
                     )}
@@ -178,11 +193,13 @@ export function Header() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={cn(
                 "p-3.5 rounded-sm border border-transparent transition-all cursor-pointer flex items-center justify-center",
-                isTransparent ? "text-white hover:bg-white/10" : "text-foreground hover:bg-accent"
+                isTransparent 
+                  ? (isLight ? "text-zinc-900 hover:bg-zinc-100" : "text-white hover:bg-white/10") 
+                  : "text-foreground hover:bg-accent"
               )}
               aria-label="Toggle navigation menu"
             >
-              <HamburgerIcon isOpen={mobileMenuOpen} isTransparent={isTransparent} />
+              <HamburgerIcon isOpen={mobileMenuOpen} isTransparent={isTransparent} isLight={isLight} />
             </button>
           </div>
 

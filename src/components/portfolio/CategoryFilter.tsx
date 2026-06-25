@@ -1,3 +1,4 @@
+import { motion } from 'motion/react';
 import { cn } from '../../lib/utils';
 
 export type FilterCategory = 'all' | 'mobile' | 'ai' | 'frontend' | 'fullstack';
@@ -18,7 +19,7 @@ const CATEGORIES: { label: string; value: FilterCategory }[] = [
 export function CategoryFilter({ activeCategory, onCategoryChange }: CategoryFilterProps) {
   return (
     <div className="sticky top-20 z-30 py-4 mb-12 flex justify-center bg-background/80 backdrop-blur-md border-b border-border/40">
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-4 py-1.5 rounded-full border border-border bg-card/50 max-w-full">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar px-4 py-1.5 rounded-full border border-border bg-card/50 max-w-full relative">
         {CATEGORIES.map((cat) => {
           const isActive = activeCategory === cat.value;
           return (
@@ -26,12 +27,19 @@ export function CategoryFilter({ activeCategory, onCategoryChange }: CategoryFil
               key={cat.value}
               onClick={() => onCategoryChange(cat.value)}
               className={cn(
-                "px-4 py-1.5 rounded-full text-xs md:text-sm font-light tracking-wide transition-all duration-300 whitespace-nowrap cursor-pointer select-none border",
+                "relative px-4 py-1.5 rounded-full text-xs md:text-sm font-light tracking-wide transition-all duration-300 whitespace-nowrap cursor-pointer select-none",
                 isActive
-                  ? "bg-foreground text-background border-foreground font-medium"
-                  : "bg-transparent text-muted-foreground border-transparent hover:text-foreground hover:border-border"
+                  ? "text-background font-medium"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
+              {isActive && (
+                <motion.span
+                  layoutId="activeCategoryPill"
+                  className="absolute inset-0 bg-foreground rounded-full -z-10"
+                  transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                />
+              )}
               {cat.label}
             </button>
           );

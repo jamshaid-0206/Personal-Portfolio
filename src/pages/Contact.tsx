@@ -4,6 +4,7 @@ import { photographerInfo } from '../data/photographer';
 import { SEOHead } from '../components/seo/SEOHead';
 import { ScrollReveal } from '../components/ui/ScrollReveal';
 import { PageTransition } from '../components/ui/PageTransition';
+import { MatrixRain } from '../components/portfolio/MatrixRain';
 
 export default function Contact() {
   const contactDetails = [
@@ -35,8 +36,11 @@ export default function Contact() {
       />
 
       {/* SECTION A: HERO HEADER */}
-      <section className="py-24 md:py-32 border-b border-border bg-card/10">
-        <div className="max-w-4xl mx-auto px-6 text-center">
+      <section className="py-24 md:py-32 border-b border-border bg-card/10 relative overflow-hidden">
+        {/* Layer 1: Absolute MatrixRain Background */}
+        <MatrixRain opacity={0.1} />
+
+        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <ScrollReveal>
             <span className="text-[10px] md:text-xs font-mono tracking-widest text-emerald-500 uppercase block mb-4">
               // TELECOMMUNICATION_PORT_0x13

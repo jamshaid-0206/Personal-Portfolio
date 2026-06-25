@@ -1,5 +1,28 @@
 @import "tailwindcss";
 
+@property --aurora-1 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(52, 211, 153, 0.09);
+}
+@property --aurora-2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(14, 165, 233, 0.07);
+}
+@property --aurora-3 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(139, 92, 246, 0.08);
+}
+@property --aurora-4 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(251, 146, 60, 0.06);
+}
+
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -27,49 +50,66 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --background: 0 0% 100%;          /* #FFFFFF */
+    --foreground: 222.2 47.4% 11.2%;   /* #0F172A */
     
-    --card: 0 0% 100%;
-    --popover: 0 0% 100%;
+    --card: 0 0% 100%;                /* #FFFFFF */
+    --popover: 0 0% 100%;             /* #FFFFFF */
     
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 142.1 76.2% 42%;        /* Premium Emerald brand active accent */
+    --primary-foreground: 0 0% 100%;
     
-    --secondary: 240 4.8% 95.9%;
-    --muted: 240 4.8% 95.9%;
-    --accent: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --secondary: 210 40% 98%;         /* #F8FAFC */
+    --muted: 210 40% 98%;             /* #F8FAFC */
+    --accent: 210 40% 98%;            /* #F8FAFC */
+    --muted-foreground: 215.4 16.3% 36.9%; /* #475569 */
     
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --border: 214.3 31.8% 91.4%;      /* #E2E8F0 */
+    --input: 214.3 31.8% 91.4%;       /* #E2E8F0 */
+    --ring: 142.1 76.2% 42%;
     --destructive: 0 84.2% 60.2%;
+
+    /* Light theme pastel aurora tones */
+    --aurora-1: rgba(52, 211, 153, 0.09);  /* Sage Emerald */
+    --aurora-2: rgba(14, 165, 233, 0.07);  /* Sky Blue */
+    --aurora-3: rgba(139, 92, 246, 0.08);  /* Lavender Glow */
+    --aurora-4: rgba(251, 146, 60, 0.06);  /* Peach Soft */
+
+    transition: --aurora-1 1000ms ease-in-out, --aurora-2 1000ms ease-in-out, --aurora-3 1000ms ease-in-out, --aurora-4 1000ms ease-in-out;
   }
 
   .dark {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 98%;
+    --background: 222.2 84% 4.9%;     /* #020617 */
+    --foreground: 210 40% 98%;         /* #F8FAFC */
     
-    --card: 142.1 25% 3.5%;
-    --popover: 142.1 25% 3.5%;
+    --card: 222.2 28.6% 11.4%;         /* #111827 */
+    --popover: 222.2 28.6% 11.4%;      /* #111827 */
     
-    --primary: 142.1 76.2% 42%;
-    --primary-foreground: 144.3 60.7% 8%;
+    --primary: 142.1 76.2% 42%;        /* Premium Emerald brand active accent */
+    --primary-foreground: 222.2 84% 4.9%; /* #020617 */
     
-    --secondary: 142.1 25% 6%;
-    --muted: 142.1 25% 6%;
-    --accent: 142.1 25% 6%;
-    --muted-foreground: 142.1 12% 60%;
+    --secondary: 222.2 47.4% 11.2%;    /* #0F172A */
+    --muted: 222.2 47.4% 11.2%;        /* #0F172A */
+    --accent: 222.2 47.4% 11.2%;       /* #0F172A */
+    --muted-foreground: 217.9 10.6% 84.9%; /* #CBD5E1 */
     
-    --border: 142.1 25% 12%;
-    --input: 142.1 25% 12%;
+    --border: 217.2 32.6% 27.5%;       /* #334155 */
+    --input: 217.2 32.6% 27.5%;        /* #334155 */
     --ring: 142.1 76.2% 42%;
     --destructive: 0 84.2% 60.2%;
+
+    /* Dark theme vivid aurora tones */
+    --aurora-1: rgba(16, 185, 129, 0.12);  /* Radiant Emerald */
+    --aurora-2: rgba(14, 165, 233, 0.10);  /* Cosmic Sky Blue */
+    --aurora-3: rgba(99, 102, 241, 0.12);  /* Indigo Aura */
+    --aurora-4: rgba(168, 85, 247, 0.08);  /* Violet Nebulae */
   }
 
   * {
     border-color: hsl(var(--border));
+    transition-property: background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 400ms;
   }
 
   body {
@@ -77,6 +117,7 @@
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
     overflow-x: hidden;
+    transition: background-color 500ms cubic-bezier(0.4, 0, 0.2, 1), color 400ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
@@ -100,5 +141,23 @@
   100% {
     transform: translateX(100%);
   }
+}
+
+/* Premium standard View Transitions styles */
+::view-transition-old(root) {
+  animation: 600ms cubic-bezier(0.4, 0, 0.2, 1) both fade-out;
+}
+::view-transition-new(root) {
+  animation: 600ms cubic-bezier(0.4, 0, 0.2, 1) both fade-in;
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 

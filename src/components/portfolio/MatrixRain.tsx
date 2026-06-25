@@ -1,11 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useReducedMotion } from 'motion/react';
+import { useTheme } from '../providers/ThemeProvider';
 
 interface MatrixRainProps {
   opacity?: number;
 }
 
 export function MatrixRain({ opacity = 1 }: MatrixRainProps) {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shouldReduceMotion = useReducedMotion();
 
@@ -22,10 +25,31 @@ export function MatrixRain({ opacity = 1 }: MatrixRainProps) {
     let width = (canvas.width = canvas.offsetWidth);
     let height = (canvas.height = canvas.offsetHeight);
 
+    let isPaused = false;
+    let isOverridden = false;
+
+    const handlePauseEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      isPaused = customEvent.detail?.paused ?? false;
+    };
+
+    const handleOverrideEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      isOverridden = customEvent.detail?.active ?? false;
+      if (canvas) {
+        canvas.style.opacity = isOverridden ? '0.65' : String(opacity);
+        canvas.style.zIndex = isOverridden ? '40' : 'auto';
+      }
+    };
+
+    window.addEventListener('universe_animation_pause', handlePauseEvent);
+    window.addEventListener('matrix_rain_override', handleOverrideEvent);
+
     // Matrix settings
     const fontSizeBase = 12;
     const fontName = 'monospace';
-    let columns = Math.ceil(width / 14);
+    const columnSpacing = 20; // Increased spacing from 14 to 20 for cleaner look and ~30% fewer columns (huge rendering speedup!)
+    let columns = Math.ceil(width / columnSpacing);
 
     interface RainColumn {
       y: number;
@@ -38,38 +62,38 @@ export function MatrixRain({ opacity = 1 }: MatrixRainProps) {
       trailColor: string;
     }
 
-    // Glyph pools
-    const katakana = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ";
-    const latin = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    const symbols = "$#@%&*+=?@_";
-    const alphabet = (katakana + latin + symbols).split("");
+    // Developer/Code-themed glyph pools
+    const binary = "01010101";
+    const syntax = "{}[]();<>+=_-/\\!*&?%^#@~";
+    const hex = "ABCDEF0123456789";
+    const alphabet = (binary + syntax + hex).split("");
 
     const generateColumn = (): RainColumn => {
-      // Determine depth layer (0 = background/small/dark, 1 = foreground/large/bright)
       const depth = Math.random();
       
       let fontSize = fontSizeBase;
-      let speed = Math.random() * 0.4 + 0.3; // standard background speed
-      let streamOpacity = 0.15 + depth * 0.4;
-      let headColor = '#34d399'; // emerald-400
-      let trailColor = '#065f46'; // emerald-800
+      let speed = Math.random() * 0.35 + 0.25; // standard background speed
+      let streamOpacity = 0.12 + depth * 0.3; // subtle opacity layers
+
+      let headColor = isLight ? '#059669' : '#ffffff'; // White heads in dark mode look extremely crisp
+      let trailColor = isLight ? '#34d399' : '#059669'; // Soft green trails
 
       if (depth > 0.75) {
         // Foreground stream
-        fontSize = fontSizeBase + 3;
-        speed = Math.random() * 0.6 + 0.8;
-        headColor = '#10b981'; // emerald-500
-        trailColor = '#047857'; // emerald-700
+        fontSize = fontSizeBase + 2;
+        speed = Math.random() * 0.5 + 0.6;
+        headColor = isLight ? '#047857' : '#ffffff';
+        trailColor = isLight ? '#10b981' : '#10b981';
       } else if (depth < 0.3) {
         // Distant background stream
         fontSize = fontSizeBase - 3;
-        speed = Math.random() * 0.2 + 0.15;
-        headColor = '#a7f3d0'; // emerald-200
-        trailColor = '#022c22'; // emerald-950
+        speed = Math.random() * 0.15 + 0.12;
+        headColor = isLight ? '#065f46' : '#a7f3d0';
+        trailColor = isLight ? '#e2e8f0' : '#022c22';
       }
 
       return {
-        y: Math.random() * -120, // initial offset off-screen
+        y: Math.random() * -100, // initial offset off-screen
         speed,
         fontSize,
         opacity: streamOpacity,
@@ -87,7 +111,7 @@ export function MatrixRain({ opacity = 1 }: MatrixRainProps) {
       width = canvas.width = canvas.offsetWidth;
       height = canvas.height = canvas.offsetHeight;
       
-      const newColumns = Math.ceil(width / 14);
+      const newColumns = Math.ceil(width / columnSpacing);
       if (newColumns > columns) {
         const extra = Array.from({ length: newColumns - columns }, generateColumn);
         rainColumns = [...rainColumns, ...extra];
@@ -102,13 +126,29 @@ export function MatrixRain({ opacity = 1 }: MatrixRainProps) {
     });
     resizeObserver.observe(canvas);
 
+    // Performance Optimization: IntersectionObserver to stop drawing when off-screen!
+    let isIntersecting = true;
+    const intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        isIntersecting = entry.isIntersecting;
+      },
+      { threshold: 0.01 }
+    );
+    intersectionObserver.observe(canvas);
+
     // Delta time management to make code frame-rate independent
     let lastTime = 0;
-    const targetFPS = 30; // Matrix rain moves best around 30 FPS
+    const targetFPS = 24; // Lowered target frame rate slightly for maximum performance (looks even more cinematic!)
     const frameInterval = 1000 / targetFPS;
     let accumulatedTime = 0;
 
     const draw = (timestamp: number) => {
+      // Pause drawing if component is paused or not visible in viewport!
+      if (isPaused || !isIntersecting) {
+        animationFrameId = requestAnimationFrame(draw);
+        return;
+      }
+
       if (!lastTime) lastTime = timestamp;
       const deltaTime = timestamp - lastTime;
       lastTime = timestamp;
@@ -116,28 +156,26 @@ export function MatrixRain({ opacity = 1 }: MatrixRainProps) {
       accumulatedTime += deltaTime;
 
       if (accumulatedTime >= frameInterval) {
-        // semi-transparent black fade overlay for trailing tails
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+        // semi-transparent black/white fade overlay for trailing tails
+        ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
         ctx.fillRect(0, 0, width, height);
 
         for (let i = 0; i < columns; i++) {
           const col = rainColumns[i];
-          const x = i * 14;
+          const x = i * columnSpacing;
           const yPixel = col.y * col.fontSize;
 
           // Update character array to create organic shifting characters
           if (Math.random() > 0.85 || col.chars.length === 0) {
             const nextChar = alphabet[Math.floor(Math.random() * alphabet.length)];
             col.chars.push(nextChar);
-            if (col.chars.length > 12) {
+            if (col.chars.length > 10) {
               col.chars.shift();
             }
           }
 
           if (yPixel >= 0 && yPixel < height + col.fontSize * 5) {
             ctx.font = `${col.fontSize}px ${fontName}`;
-            ctx.shadowBlur = col.isBright ? 6 : 0;
-            ctx.shadowColor = col.headColor;
 
             // Draw character streams with trailing tail gradient
             for (let c = 0; c < col.chars.length; c++) {
@@ -148,10 +186,8 @@ export function MatrixRain({ opacity = 1 }: MatrixRainProps) {
               
               if (isHead) {
                 ctx.fillStyle = col.headColor;
-                ctx.shadowBlur = col.isBright ? 8 : 0;
               } else {
                 ctx.fillStyle = col.trailColor;
-                ctx.shadowBlur = 0;
               }
 
               // Apply dynamic opacity layers to simulate authentic 3D streams
@@ -182,13 +218,16 @@ export function MatrixRain({ opacity = 1 }: MatrixRainProps) {
     return () => {
       cancelAnimationFrame(animationFrameId);
       resizeObserver.disconnect();
+      intersectionObserver.disconnect();
+      window.removeEventListener('universe_animation_pause', handlePauseEvent);
+      window.removeEventListener('matrix_rain_override', handleOverrideEvent);
     };
-  }, [shouldReduceMotion]);
+  }, [shouldReduceMotion, theme]);
 
   if (shouldReduceMotion) {
     return (
       <div 
-        className="absolute inset-0 w-full h-full bg-gradient-to-b from-black via-zinc-950 to-black"
+        className="absolute inset-0 w-full h-full bg-gradient-to-b from-white via-zinc-50 to-white dark:from-black dark:via-zinc-950 dark:to-black"
         style={{ opacity }}
       />
     );

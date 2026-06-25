@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useReducedMotion } from 'motion/react';
+import { playType, playBlip } from '../../lib/audio';
 
 interface TerminalLine {
   type: 'input' | 'output';
@@ -79,7 +80,9 @@ export function TechTerminal() {
 
       if (charIndex < fullCommand.length) {
         // Type the command letter-by-letter
-        setCurrentCommand((prev) => prev + fullCommand[charIndex]);
+        const char = fullCommand[charIndex];
+        setCurrentCommand((prev) => prev + char);
+        playType(0.008);
         charIndex++;
         timer = setTimeout(processScript, 22); // Char interval ~22ms
       } else {
@@ -90,6 +93,7 @@ export function TechTerminal() {
             { type: 'input', prompt: currentItem.prompt, text: fullCommand },
             { type: 'output', text: currentItem.output }
           ]);
+          playBlip(0.01, true); // Play quick system completion blip
           setCurrentCommand('');
           scriptIndex++;
           charIndex = 0;

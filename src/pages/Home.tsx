@@ -13,8 +13,12 @@ import { ScrollIndicator } from '../components/ui/ScrollIndicator';
 import { SEOHead } from '../components/seo/SEOHead';
 import { PageTransition } from '../components/ui/PageTransition';
 import { Magnetic } from '../components/ui/Magnetic';
+import { useTheme } from '../components/providers/ThemeProvider';
+import { WordMorpher } from '../components/ui/WordMorpher';
 
 export default function Home() {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const shouldReduceMotion = useReducedMotion();
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHoveringHero, setIsHoveringHero] = useState(false);
@@ -71,7 +75,7 @@ export default function Home() {
         onMouseMove={handleHeroMouseMove}
         onMouseEnter={() => setIsHoveringHero(true)}
         onMouseLeave={() => setIsHoveringHero(false)}
-        className="h-screen w-full overflow-hidden relative bg-black flex flex-col justify-center items-center px-4 sm:px-6"
+        className="h-screen w-full overflow-hidden relative bg-background flex flex-col justify-center items-center px-4 sm:px-6"
         aria-label="Hero Introduction"
       >
         {/* Layer 1: Absolute MatrixRain Background */}
@@ -82,7 +86,7 @@ export default function Home() {
 
         {/* Layer 3: Ambient Grid Pattern overlay */}
         <div 
-          className="absolute inset-0 pointer-events-none select-none z-0 bg-[linear-gradient(to_right,#10b98103_1px,transparent_1px),linear-gradient(to_bottom,#10b98103_1px,transparent_1px)] bg-[size:5rem_5rem]"
+          className="absolute inset-0 pointer-events-none select-none z-0 bg-[linear-gradient(to_right,#10b98105_1px,transparent_1px),linear-gradient(to_bottom,#10b98105_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#10b98103_1px,transparent_1px),linear-gradient(to_bottom,#10b98103_1px,transparent_1px)] bg-[size:5rem_5rem]"
           style={{
             maskImage: 'radial-gradient(ellipse at center, black, transparent 85%)',
             WebkitMaskImage: 'radial-gradient(ellipse at center, black, transparent 85%)',
@@ -103,7 +107,9 @@ export default function Home() {
         <div 
           className="absolute inset-0 pointer-events-none select-none z-0"
           style={{
-            background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.92) 90%)'
+            background: isLight 
+              ? 'radial-gradient(ellipse at center, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.92) 90%)'
+              : 'radial-gradient(ellipse at center, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.92) 90%)'
           }}
         />
 
@@ -117,16 +123,16 @@ export default function Home() {
           {/* Status Pill */}
           <motion.div 
             variants={heroItemVariants}
-            className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full border border-emerald-500/30 bg-black/75 backdrop-blur-md text-emerald-300 text-[10px] min-[375px]:text-xs tracking-widest uppercase select-none shadow-[0_0_20px_rgba(16,185,129,0.1)]"
+            className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full border border-emerald-500/30 bg-secondary/80 backdrop-blur-md text-emerald-800 dark:text-emerald-300 text-[10px] min-[375px]:text-xs tracking-widest uppercase select-none shadow-[0_0_20px_rgba(16,185,129,0.1)]"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0 shadow-[0_0_8px_#34d399]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse shrink-0 shadow-[0_0_8px_#34d399]" />
             <span className="truncate">// system online — full-stack developer</span>
           </motion.div>
 
           {/* Glowing Movie Trailer Title Reveal */}
           <motion.h1 
             variants={heroItemVariants}
-            className="text-white text-[6.2vw] min-[350px]:text-[6.5vw] min-[400px]:text-[7vw] sm:text-6xl md:text-7xl lg:text-8xl font-extralight tracking-tight min-[375px]:tracking-normal sm:tracking-widest uppercase filter drop-shadow-[0_0_40px_rgba(16,185,129,0.35)] leading-none select-none py-1 flex justify-center items-center whitespace-nowrap flex-nowrap overflow-visible w-full"
+            className="text-zinc-900 dark:text-white text-[6.2vw] min-[350px]:text-[6.5vw] min-[400px]:text-[7vw] sm:text-6xl md:text-7xl lg:text-8xl font-extralight tracking-tight min-[375px]:tracking-normal sm:tracking-widest uppercase filter drop-shadow-[0_0_40px_rgba(16,185,129,0.15)] dark:drop-shadow-[0_0_40px_rgba(16,185,129,0.35)] leading-none select-none py-1 flex justify-center items-center whitespace-nowrap flex-nowrap overflow-visible w-full"
           >
             {titleString.split("").map((char, index) => {
               // Space placeholder
@@ -155,16 +161,21 @@ export default function Home() {
           {/* Monospace Tagline */}
           <motion.p 
             variants={heroItemVariants}
-            className="text-emerald-300/90 font-mono text-xs sm:text-sm md:text-base lg:text-lg tracking-wide max-w-2xl text-center select-all px-2"
+            className="text-emerald-800 dark:text-emerald-300/90 font-mono text-xs sm:text-sm md:text-base lg:text-lg tracking-wide max-w-2xl text-center select-all px-2"
           >
-            <span className="text-emerald-400 font-bold mr-1.5">&gt;</span>
+            <span className="text-emerald-500 dark:text-emerald-400 font-bold mr-1.5">&gt;</span>
             {photographerInfo.tagline}
           </motion.p>
+
+          {/* Staggered rotating morphing text elements */}
+          <motion.div variants={heroItemVariants} className="py-2">
+            <WordMorpher />
+          </motion.div>
 
           {/* Bio Introduction paragraph */}
           <motion.p 
             variants={heroItemVariants}
-            className="text-white/85 font-light text-sm sm:text-base md:text-lg leading-relaxed max-w-2xl text-center select-text px-2"
+            className="text-zinc-700 dark:text-white/85 font-light text-sm sm:text-base md:text-lg leading-relaxed max-w-2xl text-center select-text px-2"
           >
             {photographerInfo.heroIntroduction}
           </motion.p>
@@ -178,7 +189,7 @@ export default function Home() {
             <Magnetic>
               <Link
                 to="/portfolio"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 border border-emerald-400/60 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-200 font-mono text-xs tracking-wider uppercase rounded-sm transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 shadow-[0_0_15px_rgba(16,185,129,0.05)]"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 border border-emerald-500/40 dark:border-emerald-400/60 bg-emerald-500/5 dark:bg-emerald-500/10 hover:bg-emerald-500/15 dark:hover:bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 font-mono text-xs tracking-wider uppercase rounded-sm transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 shadow-[0_0_15px_rgba(16,185,129,0.05)]"
               >
                 <Code2 size={14} />
                 <span>view.projects()</span>
@@ -191,7 +202,7 @@ export default function Home() {
                 href={photographerInfo.socialLinks.linkedin}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 border border-white/20 bg-white/5 hover:bg-white/10 text-white font-mono text-xs tracking-wider uppercase rounded-sm transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white focus-visible:ring-offset-2"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 border border-zinc-300 dark:border-white/20 bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-900 dark:text-white font-mono text-xs tracking-wider uppercase rounded-sm transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white focus-visible:ring-offset-2"
               >
                 <Github size={14} />
                 <span>github.com/jamshaid-0206</span>
@@ -203,7 +214,7 @@ export default function Home() {
               <a
                 href="/resume.pdf"
                 download="Jamshaid_Ghafoor_Resume.pdf"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 border border-emerald-400/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-200/80 hover:text-emerald-200 font-mono text-xs tracking-wider uppercase rounded-sm transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 border border-emerald-500/20 dark:border-emerald-400/20 bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-800 dark:text-emerald-200/80 hover:text-emerald-900 dark:hover:text-emerald-200 font-mono text-xs tracking-wider uppercase rounded-sm transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
               >
                 <Download size={14} />
                 <span>download.resume()</span>
@@ -219,23 +230,23 @@ export default function Home() {
 
       {/* SECTION B: TECH STACK TERMINAL SESSION */}
       <section 
-        className="py-24 md:py-32 bg-black border-y border-emerald-500/20 relative overflow-hidden"
+        className="py-24 md:py-32 bg-secondary border-y border-emerald-500/10 dark:border-emerald-500/20 relative overflow-hidden"
         aria-label="My Technical Stack"
       >
         {/* Subtle background matrix overlay */}
-        <MatrixRain opacity={0.1} />
+        <MatrixRain opacity={0.15} />
 
         <div className="max-w-5xl mx-auto px-6 relative z-10 text-center">
           <ScrollReveal>
             <div className="flex flex-col items-center mb-12">
-              <div className="inline-flex items-center gap-2 text-emerald-400 font-mono text-xs md:text-sm tracking-widest uppercase mb-4">
+              <div className="inline-flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-mono text-xs md:text-sm tracking-widest uppercase mb-4">
                 <Terminal size={14} />
                 <span>[ LIVE TERMINAL ENGINE ]</span>
               </div>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-extralight tracking-wide text-white font-sans">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-extralight tracking-wide text-zinc-900 dark:text-white font-sans">
                 My stack, in one shell session
               </h2>
-              <p className="text-white/60 font-light text-sm md:text-base max-w-xl mx-auto mt-3">
+              <p className="text-zinc-600 dark:text-white/60 font-light text-sm md:text-base max-w-xl mx-auto mt-3">
                 Experience Jamshaid's environment configurations and skill-matrices executed natively.
               </p>
             </div>
@@ -256,7 +267,7 @@ export default function Home() {
                 {photographerInfo.clients.map((skill, index) => (
                   <span
                     key={index}
-                    className="px-3.5 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-colors duration-300 text-emerald-300 font-mono text-[10px] md:text-xs tracking-wider"
+                    className="px-3.5 py-1.5 rounded-full border border-emerald-500/10 dark:border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/40 hover:bg-emerald-500/10 transition-colors duration-300 text-emerald-800 dark:text-emerald-300 font-mono text-[10px] md:text-xs tracking-wider"
                   >
                     {skill}
                   </span>

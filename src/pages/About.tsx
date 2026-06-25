@@ -8,6 +8,7 @@ import { PageTransition } from '../components/ui/PageTransition';
 import { AnimatedCounter } from '../components/ui/AnimatedCounter';
 import { AboutVideo } from '../components/ui/AboutVideo';
 import { cn } from '../lib/utils';
+import { MatrixRain } from '../components/portfolio/MatrixRain';
 
 export default function About() {
   const [mediaTab, setMediaTab] = useState<'demo' | 'loop'>('demo');
@@ -55,8 +56,11 @@ export default function About() {
       />
 
       {/* SECTION A: PAGE HERO */}
-      <section className="py-24 md:py-32 border-b border-border bg-card/10">
-        <div className="max-w-4xl mx-auto px-6 text-center">
+      <section className="py-24 md:py-32 border-b border-border bg-card/10 relative overflow-hidden">
+        {/* Layer 1: Absolute MatrixRain Background */}
+        <MatrixRain opacity={0.1} />
+
+        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <ScrollReveal>
             <span className="text-[10px] md:text-xs font-mono tracking-widest text-emerald-500 uppercase block mb-4">
               // BIOGRAPHICAL_RECORDS
@@ -165,7 +169,7 @@ export default function About() {
 
               {/* LinkedIn */}
               <a
-                href="https://www.linkedin.com/in/jamshaidghafoor/"
+                href="https://github.com/jamshaid-0206"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 p-3 border border-border rounded-sm hover:bg-accent text-foreground transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"

@@ -4,7 +4,8 @@ import { photographerInfo } from '../../data/photographer';
 export function Footer() {
   const currentYear = new Date().getFullYear();
   const ghUrl = photographerInfo.socialLinks.linkedin; // "https://github.com/jamshaid-0206"
-  const mailUrl = photographerInfo.socialLinks.instagram; // "mailto:jamshedghafoor174@gmail.com"
+  const instaUrl = photographerInfo.socialLinks.instagram;
+  const mailUrl = `mailto:${photographerInfo.email}`;
 
   // Behance custom inline SVG icon
   const BehanceIcon = ({ size = 20 }: { size?: number }) => (
@@ -32,15 +33,24 @@ export function Footer() {
 
         {/* Right Side: Social links matching spec mapping */}
         <div className="flex items-center gap-6 text-muted-foreground">
-          {/* Instagram acts as email shortcut */}
+          {/* Instagram Link */}
           <a
-            href={mailUrl}
+            href={instaUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5"
-            aria-label="Instagram Email Shortcut"
+            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5 cursor-pointer"
+            aria-label="Instagram Profile"
           >
             <Instagram size={18} />
+          </a>
+
+          {/* Email link */}
+          <a
+            href={mailUrl}
+            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5 cursor-pointer"
+            aria-label="Send Email"
+          >
+            <Mail size={18} />
           </a>
 
           {/* LinkedIn maps to GitHub URL */}
@@ -48,7 +58,7 @@ export function Footer() {
             href={ghUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5"
+            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5 cursor-pointer"
             aria-label="LinkedIn Profile"
           >
             <Linkedin size={18} />
@@ -59,7 +69,7 @@ export function Footer() {
             href={ghUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5"
+            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5 cursor-pointer"
             aria-label="Behance Portfolio"
           >
             <BehanceIcon size={18} />
@@ -70,7 +80,7 @@ export function Footer() {
             href={ghUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5"
+            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5 cursor-pointer"
             aria-label="GitHub Profile"
           >
             <Github size={18} />

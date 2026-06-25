@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
+import { useTheme } from '../providers/ThemeProvider';
 
 interface Point3D {
   x: number;
@@ -9,6 +10,8 @@ interface Point3D {
 }
 
 export function ThreeDCanvas() {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
@@ -108,7 +111,7 @@ export function ThreeDCanvas() {
 
     const render = () => {
       // Clear canvas with a very subtle fade to create soft trails
-      ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+      ctx.fillStyle = isLight ? 'rgba(255, 255, 255, 1)' : 'rgba(0, 0, 0, 1)';
       ctx.fillRect(0, 0, width, height);
 
       // Interpolate mouse coordinates (Spring easing logic)
@@ -168,7 +171,7 @@ export function ThreeDCanvas() {
       };
 
       // Draw subtle decorative HUD targeting guidelines
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.04)';
+      ctx.strokeStyle = isLight ? 'rgba(4, 120, 87, 0.12)' : 'rgba(16, 185, 129, 0.04)';
       ctx.lineWidth = 1;
       
       // Center target crosshair
@@ -214,8 +217,8 @@ export function ThreeDCanvas() {
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < radius * 0.75 * zoomFactor) {
-            const alpha = (1 - dist / (radius * 0.75 * zoomFactor)) * 0.18 * p1.scale;
-            ctx.strokeStyle = `rgba(16, 185, 129, ${alpha})`;
+            const alpha = (1 - dist / (radius * 0.75 * zoomFactor)) * (isLight ? 0.35 : 0.18) * p1.scale;
+            ctx.strokeStyle = isLight ? `rgba(4, 120, 87, ${alpha})` : `rgba(16, 185, 129, ${alpha})`;
             ctx.beginPath();
             ctx.moveTo(p1.X, p1.Y);
             ctx.lineTo(p2.X, p2.Y);
@@ -237,7 +240,7 @@ export function ThreeDCanvas() {
         }
       }
       ctx.closePath();
-      ctx.strokeStyle = 'rgba(52, 211, 153, 0.08)';
+      ctx.strokeStyle = isLight ? 'rgba(52, 211, 153, 0.25)' : 'rgba(52, 211, 153, 0.08)';
       ctx.stroke();
 
       // 3. Draw Nodes (Vertices)
@@ -255,9 +258,9 @@ export function ThreeDCanvas() {
 
         // Highlighting hot-spots
         if (i % 6 === 0) {
-          ctx.shadowBlur = 12;
+          ctx.shadowBlur = isLight ? 6 : 12;
           ctx.shadowColor = '#10b981';
-          ctx.fillStyle = '#ffffff';
+          ctx.fillStyle = isLight ? '#047857' : '#ffffff';
           ctx.beginPath();
           ctx.arc(p.X, p.Y, dotSize * 1.3, 0, Math.PI * 2);
           ctx.fill();
@@ -269,7 +272,7 @@ export function ThreeDCanvas() {
       for (let i = 0; i < projectedRing.length; i++) {
         const p = projectedRing[i];
         if (i % 3 === 0) {
-          ctx.fillStyle = 'rgba(52, 211, 153, 0.4)';
+          ctx.fillStyle = isLight ? 'rgba(4, 120, 87, 0.55)' : 'rgba(52, 211, 153, 0.4)';
           ctx.beginPath();
           ctx.arc(p.X, p.Y, 2 * p.scale, 0, Math.PI * 2);
           ctx.fill();
@@ -277,7 +280,7 @@ export function ThreeDCanvas() {
       }
 
       // 5. Draw Digital Core HUD angle readouts
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.35)';
+      ctx.fillStyle = isLight ? 'rgba(4, 120, 87, 0.85)' : 'rgba(16, 185, 129, 0.35)';
       ctx.font = '8px monospace';
       
       // Bottom left coordinate readout
@@ -300,11 +303,11 @@ export function ThreeDCanvas() {
       cancelAnimationFrame(animationId);
       resizeObserver.disconnect();
     };
-  }, [dimensions, shouldReduceMotion]);
+  }, [dimensions, shouldReduceMotion, theme]);
 
   if (shouldReduceMotion) {
     return (
-      <div className="absolute inset-0 w-full h-full bg-zinc-950 flex items-center justify-center pointer-events-none select-none">
+      <div className="absolute inset-0 w-full h-full bg-background flex items-center justify-center pointer-events-none select-none">
         <div className="w-48 h-48 rounded-full border border-emerald-500/10 flex items-center justify-center">
           <div className="w-32 h-32 rounded-full border border-emerald-500/20 flex items-center justify-center animate-pulse">
             <div className="w-16 h-16 rounded-full bg-emerald-500/5 border border-emerald-500/30" />
@@ -317,7 +320,7 @@ export function ThreeDCanvas() {
   return (
     <div 
       ref={containerRef}
-      className="absolute inset-0 w-full h-full bg-black select-none pointer-events-none"
+      className="absolute inset-0 w-full h-full bg-background select-none pointer-events-none"
     >
       <canvas 
         ref={canvasRef} 

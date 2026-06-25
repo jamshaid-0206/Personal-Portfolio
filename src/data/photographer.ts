@@ -34,7 +34,7 @@ export const photographerInfo: PhotographerInfo = {
   socialLinks: {
     linkedin: "https://github.com/jamshaid-0206",
     behance: "https://github.com/jamshaid-0206",
-    instagram: "mailto:jamshedghafoor174@gmail.com"
+    instagram: "https://www.instagram.com/jd_x26?igsh=enMzdmVweDF4dW10&utm_source=qr"
   },
   portraitImage: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=1200"
 };

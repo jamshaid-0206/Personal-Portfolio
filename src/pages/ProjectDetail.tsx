@@ -30,6 +30,7 @@ import { PageTransition } from '../components/ui/PageTransition';
 import { SkeletonImage } from '../components/ui/SkeletonImage';
 import { ProjectDemoVideo } from '../components/portfolio/ProjectDemoVideo';
 import { SystemTopology } from '../components/portfolio/SystemTopology';
+import { ProjectStats } from '../components/portfolio/ProjectStats';
 import { cn } from '../lib/utils';
 
 export default function ProjectDetail() {
@@ -491,6 +492,13 @@ export default function ProjectDetail() {
           </div>
 
         </div>
+      </section>
+
+      {/* SECTION B2: NUMERICAL TELEMETRY METRICS IN-VIEW COUNT-UP */}
+      <section className="py-12 max-w-7xl mx-auto px-6 lg:px-8 border-t border-border/40">
+        <ScrollReveal>
+          <ProjectStats projectSlug={project.slug} />
+        </ScrollReveal>
       </section>
 
       {/* SECTION C: MASONRY-STYLE INTERACTIVE IMAGE GALLERY */}

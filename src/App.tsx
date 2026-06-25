@@ -12,6 +12,7 @@ import { Toaster } from 'sonner';
 import { ThemeProvider } from './components/providers/ThemeProvider';
 import { Layout } from './components/layout/Layout';
 import { LoadingFallback } from './components/ui/LoadingFallback';
+import { InteractionSoundManager } from './components/providers/InteractionSoundManager';
 
 // Pages imports
 import Home from './pages/Home';
@@ -49,6 +50,7 @@ export default function App() {
   return (
     <HelmetProvider>
       <ThemeProvider>
+        <InteractionSoundManager />
         <BrowserRouter>
           <AnimatePresence mode="wait">
             {isBooting ? (
