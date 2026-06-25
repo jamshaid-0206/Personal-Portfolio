@@ -315,25 +315,6 @@ My focus is on building:
 * User-Centric Experiences
 
 ---
-# 🌐 Live Demo
-
-### 🚀 Experience the Portfolio Live
-
-🔗 **Portfolio Website**
-
-https://personal-portfolio-omega-two-96.vercel.app/
-
-Explore the complete interactive experience including:
-
-* Matrix-inspired hero section
-* Advanced animations
-* Responsive design
-* Project case studies
-* Interactive portfolio gallery
-* Contact system
-* Modern UI/UX design
-
----
 
 # 📸 Preview
 
