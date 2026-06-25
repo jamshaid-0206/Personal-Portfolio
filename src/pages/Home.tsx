@@ -132,30 +132,30 @@ export default function Home() {
           {/* Glowing Movie Trailer Title Reveal */}
           <motion.h1 
             variants={heroItemVariants}
-            className="text-zinc-900 dark:text-white text-[6.2vw] min-[350px]:text-[6.5vw] min-[400px]:text-[7vw] sm:text-6xl md:text-7xl lg:text-8xl font-extralight tracking-tight min-[375px]:tracking-normal sm:tracking-widest uppercase filter drop-shadow-[0_0_40px_rgba(16,185,129,0.15)] dark:drop-shadow-[0_0_40px_rgba(16,185,129,0.35)] leading-none select-none py-1 flex justify-center items-center whitespace-nowrap flex-nowrap overflow-visible w-full"
+            className="text-zinc-900 dark:text-white text-3xl min-[360px]:text-4xl min-[410px]:text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extralight tracking-tight min-[375px]:tracking-normal sm:tracking-widest uppercase filter drop-shadow-[0_0_40px_rgba(16,185,129,0.15)] dark:drop-shadow-[0_0_40px_rgba(16,185,129,0.35)] leading-none select-none py-1 flex flex-wrap justify-center items-center gap-x-4 gap-y-2 sm:gap-0 w-full"
           >
-            {titleString.split("").map((char, index) => {
-              // Space placeholder
-              if (char === " ") {
-                return <span key={index} className="w-[3.5vw] sm:w-10" />;
-              }
-
-              return (
-                <motion.span
-                  key={index}
-                  initial={shouldReduceMotion ? {} : { opacity: 0, y: 35, filter: 'blur(8px)', scale: 1.2 }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)', scale: 1 }}
-                  transition={{
-                    duration: 0.9,
-                    delay: 0.2 + index * 0.04,
-                    ease: [0.16, 1, 0.3, 1] // premium cinematic feel
-                  }}
-                  className="inline-block hover:text-emerald-400 transition-colors duration-300 transform-gpu"
-                >
-                  {char}
-                </motion.span>
-              );
-            })}
+            {titleString.split(" ").map((word, wordIdx) => (
+              <span key={wordIdx} className="inline-flex whitespace-nowrap">
+                {word.split("").map((char, charIdx) => {
+                  const globalIdx = wordIdx * 10 + charIdx;
+                  return (
+                    <motion.span
+                      key={charIdx}
+                      initial={shouldReduceMotion ? {} : { opacity: 0, y: 35, filter: 'blur(8px)', scale: 1.2 }}
+                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)', scale: 1 }}
+                      transition={{
+                        duration: 0.9,
+                        delay: 0.2 + globalIdx * 0.04,
+                        ease: [0.16, 1, 0.3, 1]
+                      }}
+                      className="inline-block hover:text-emerald-400 transition-colors duration-300 transform-gpu"
+                    >
+                      {char}
+                    </motion.span>
+                  );
+                })}
+              </span>
+            ))}
           </motion.h1>
 
           {/* Monospace Tagline */}
