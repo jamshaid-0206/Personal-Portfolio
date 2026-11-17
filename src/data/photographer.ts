@@ -30,7 +30,8 @@ export const photographerInfo: PhotographerInfo = {
   education: "BSc Computer Science, Abasyn University, Islamabad (2023 – 2027)",
   location: "Islamabad, Pakistan",
   email: "jamshedghafoor174@gmail.com",
-  phone: "+92 349 5131903",
+  phone: "+92 312 4134549",
+  whatsapp: "https://wa.me/923124134549?text=Hi%20Jamshaid%21%20I%20found%20your%20portfolio%20and%20would%20like%20to%20discuss%20a%20project.",
   availability: "Open to freelance, contract, and full-time opportunities",
   socialLinks: {
     linkedin: "https://github.com/jamshaid-0206",

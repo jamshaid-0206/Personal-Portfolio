@@ -42,6 +42,7 @@ export interface PhotographerInfo {
   location: string;
   email: string;
   phone: string;
+  whatsapp: string; // wa.me link (WhatsApp Business)
   availability: string;
   socialLinks: {
     linkedin: string;
