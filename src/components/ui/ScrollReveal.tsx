@@ -17,13 +17,13 @@ export function ScrollReveal({ children, delay = 0, duration = 0.6 }: ScrollReve
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-80px' }}
+      initial={{ opacity: 0, y: 40, scale: 0.98, filter: 'blur(6px)' }}
+      whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+      viewport={{ once: true, margin: '-60px' }}
       transition={{
-        duration,
+        duration: duration + 0.2,
         delay,
-        ease: 'easeOut',
+        ease: [0.16, 1, 0.3, 1],
       }}
     >
       {children}

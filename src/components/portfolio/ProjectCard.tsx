@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useReducedMotion } from 'motion/react';
+import { motion, useMotionValue, useReducedMotion, useSpring, useMotionTemplate } from 'motion/react';
 import { Project } from '../../types';
 import { cn } from '../../lib/utils';
 
@@ -21,10 +21,12 @@ export function ProjectCard({
   const shouldReduceMotion = useReducedMotion();
   const cardRef = useRef<HTMLDivElement>(null);
   
-  // 3D Tilt and Cursor Tracking state
-  const [rotateX, setRotateX] = useState(0);
-  const [rotateY, setRotateY] = useState(0);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  // 3D tilt driven by motion values (no React re-render per mouse move)
+  const rx = useMotionValue(0);
+  const ry = useMotionValue(0);
+  const srx = useSpring(rx, { stiffness: 220, damping: 18 });
+  const sry = useSpring(ry, { stiffness: 220, damping: 18 });
+  const transform = useMotionTemplate`perspective(1200px) rotateX(${srx}deg) rotateY(${sry}deg)`;
   const [isHovered, setIsHovered] = useState(false);
 
   // Aspect ratio styling map
@@ -38,31 +40,18 @@ export function ProjectCard({
     if (!cardRef.current) return;
     const element = cardRef.current;
     const rect = element.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
-    
-    // Relative coordinates inside card
     const localX = e.clientX - rect.left;
     const localY = e.clientY - rect.top;
-    
-    setMousePos({ x: localX, y: localY });
-
+    element.style.setProperty('--mx', `${localX}px`);
+    element.style.setProperty('--my', `${localY}px`);
     if (shouldReduceMotion) return;
-
-    const mouseX = localX - width / 2;
-    const mouseY = localY - height / 2;
-    
-    // Max tilt angles (10 degrees for gorgeous depth)
-    const rX = -(mouseY / (height / 2)) * 10;
-    const rY = (mouseX / (width / 2)) * 10;
-    
-    setRotateX(rX);
-    setRotateY(rY);
+    rx.set(-((localY - rect.height / 2) / (rect.height / 2)) * 10);
+    ry.set(((localX - rect.width / 2) / (rect.width / 2)) * 10);
   };
 
   const handleMouseLeave = () => {
-    setRotateX(0);
-    setRotateY(0);
+    rx.set(0);
+    ry.set(0);
     setIsHovered(false);
   };
 
@@ -94,12 +83,10 @@ export function ProjectCard({
       onMouseLeave={handleMouseLeave}
       style={{
         transformStyle: 'preserve-3d',
-        transform: shouldReduceMotion 
-          ? 'none' 
-          : `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
+        transform: shouldReduceMotion ? 'none' : transform,
       }}
       className={cn(
-        "w-full transition-all duration-500 rounded-sm relative group overflow-hidden bg-zinc-950/40 backdrop-blur-md border border-white/10",
+        "w-full transition-[box-shadow,border-color,scale] duration-500 rounded-sm relative group overflow-hidden bg-zinc-950/40 backdrop-blur-md border border-white/10",
         isHovered ? "shadow-[0_25px_60px_rgba(16,185,129,0.18)] border-emerald-500/40 z-10 scale-[1.01]" : "shadow-md"
       )}
       data-cursor="view"
@@ -130,7 +117,7 @@ export function ProjectCard({
             <div 
               className="absolute inset-0 pointer-events-none z-10 mix-blend-overlay opacity-30 transition-opacity duration-300"
               style={{
-                background: `radial-gradient(circle 200px at ${mousePos.x}px ${mousePos.y}px, rgba(255, 255, 255, 0.7), transparent 80%)`
+                background: 'radial-gradient(circle 200px at var(--mx) var(--my), rgba(255, 255, 255, 0.7), transparent 80%)'
               }}
             />
           )}
@@ -140,7 +127,7 @@ export function ProjectCard({
             <div 
               className="absolute inset-0 pointer-events-none z-0 opacity-40 transition-opacity duration-300"
               style={{
-                background: `radial-gradient(circle 220px at ${mousePos.x}px ${mousePos.y}px, rgba(16, 185, 129, 0.18), transparent 85%)`
+                background: 'radial-gradient(circle 220px at var(--mx) var(--my), rgba(16, 185, 129, 0.18), transparent 85%)'
               }}
             />
           )}
