@@ -1,15 +1,15 @@
 /**
  * Vercel Function: GET /api/tts?text=...
  *
- * Turns assistant replies into speech with ElevenLabs, using the portfolio
- * owner's voice. The API key only ever lives on the server
+ * Turns assistant replies into speech with ElevenLabs, using the ElevenLabs
+ * "Chris" voice. The API key only ever lives on the server
  * (ELEVENLABS_API_KEY env var) — it is never shipped to the browser.
  *
  * Responses are cached on Vercel's CDN per unique text, so each canned
  * assistant reply is synthesised (and billed) only once.
  */
 
-const DEFAULT_VOICE_ID = 'kyu5ji11Ocj3MIcc9vdQ';
+const DEFAULT_VOICE_ID = 'iP95p4xoKVk53GoZ742B'; // ElevenLabs default voice "Chris" (works on the free plan)
 const DEFAULT_MODEL_ID = 'eleven_flash_v2_5'; // lowest latency, lowest cost
 const MAX_CHARS = 900;
 
