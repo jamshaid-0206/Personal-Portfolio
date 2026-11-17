@@ -1,146 +1,70 @@
-import { Mail, Phone, MapPin, Terminal, CalendarClock } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { ContactForm } from '../components/forms/ContactForm';
 import { photographerInfo } from '../data/photographer';
 import { SEOHead } from '../components/seo/SEOHead';
-import { ScrollReveal } from '../components/ui/ScrollReveal';
 import { PageTransition } from '../components/ui/PageTransition';
-import { MatrixRain } from '../components/portfolio/MatrixRain';
+import { CONTAINER, Eyebrow, InView, LiveClock, PageHero } from '../components/ui/Premium';
 
 export default function Contact() {
-  const contactDetails = [
-    {
-      icon: <Mail size={16} className="text-emerald-400" />,
-      label: 'Email',
-      value: photographerInfo.email,
-      href: `mailto:${photographerInfo.email}`
-    },
-    {
-      icon: <Phone size={16} className="text-emerald-400" />,
-      label: 'Phone',
-      value: photographerInfo.phone,
-      href: `tel:${photographerInfo.phone.replace(/\s+/g, '')}`
-    },
-    {
-      icon: <MapPin size={16} className="text-emerald-400" />,
-      label: 'Location',
-      value: photographerInfo.location,
-      href: `https://maps.google.com/?q=${encodeURIComponent(photographerInfo.location)}`
-    }
+  const channels = [
+    { label: 'Email', value: photographerInfo.email, href: `mailto:${photographerInfo.email}` },
+    { label: 'Phone', value: photographerInfo.phone, href: `tel:${photographerInfo.phone.replace(/\s+/g, '')}` },
+    { label: 'GitHub', value: 'github.com/jamshaid-0206', href: photographerInfo.socialLinks.linkedin, external: true },
+    { label: 'Instagram', value: '@jd_x26', href: photographerInfo.socialLinks.instagram, external: true },
   ];
 
   return (
     <PageTransition>
-      <SEOHead 
-        title="Contact" 
-        description="Get in touch with Jamshaid Ghafoor for full-stack web and mobile development opportunities." 
+      <SEOHead title="Contact" description="Get in touch with Jamshaid Ghafoor for full-stack web and mobile development opportunities." />
+
+      <PageHero
+        compact
+        eyebrow="Contact"
+        lines={["Let's build", <>something <span className="text-gradient-anim italic pr-[0.06em]">great.</span></>]}
+        intro="Have a project, a role or just an idea? Tell me a bit about it — I usually reply within a day."
       />
 
-      {/* SECTION A: HERO HEADER */}
-      <section className="py-24 md:py-32 border-b border-border bg-card/10 relative overflow-hidden">
-        {/* Layer 1: Absolute MatrixRain Background */}
-        <MatrixRain opacity={0.1} />
+      <section className={`${CONTAINER} pb-24 pt-8 md:pb-36`} aria-label="Contact form">
+        <div className="grid gap-16 lg:grid-cols-[1.25fr_0.75fr] lg:gap-24">
+          <InView>
+            <ContactForm />
+          </InView>
 
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <ScrollReveal>
-            <span className="text-[10px] md:text-xs font-mono tracking-widest text-emerald-500 uppercase block mb-4">
-              // TELECOMMUNICATION_PORT_0x13
-            </span>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-light tracking-wide text-foreground font-sans uppercase">
-              Get in Touch
-            </h1>
-            <p className="text-muted-foreground font-light text-lg md:text-xl max-w-xl mx-auto mt-4 leading-relaxed">
-              Let's discuss your next project or role.
-            </p>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* SECTION B: SPLIT DETAILED LAYOUT */}
-      <section className="py-16 md:py-24 max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-          
-          {/* LEFT PANEL: ZOD VALIDATED CONTACT ENQUIRY FORM */}
-          <div className="lg:col-span-7">
-            <ScrollReveal>
-              <div className="space-y-6">
-                <div className="flex items-center gap-2 text-xs font-mono tracking-widest text-emerald-500 uppercase">
-                  <Terminal size={14} />
-                  <span>[ TRANSMIT_MESSAGE_SHELL ]</span>
-                </div>
-                
-                {/* Form component */}
-                <ContactForm />
-              </div>
-            </ScrollReveal>
-          </div>
-
-          {/* RIGHT PANEL: CONTACT CARD DIRECT DETAILS */}
-          <div className="lg:col-span-5 space-y-8 lg:sticky lg:top-24 text-left">
-            <ScrollReveal delay={0.15}>
-              <div className="space-y-6">
-                
-                {/* Header title */}
-                <div className="space-y-2">
-                  <span className="text-[10px] font-mono tracking-widest text-emerald-500 uppercase block">
-                    // DIRECT_CHANNELS
-                  </span>
-                  <h2 className="text-2xl md:text-3xl font-light tracking-wide text-foreground">
-                    Connect Directly
-                  </h2>
-                </div>
-
-                <p className="text-muted-foreground font-light text-sm md:text-base leading-relaxed">
-                  Have an interesting proposal, project scope, or full-time opening? I am always happy to discuss terms, timeline, and architectural paths.
-                </p>
-
-                {/* Info Card List with wrapped square icon sizes */}
-                <div className="space-y-4">
-                  {contactDetails.map((item, idx) => (
-                    <a
-                      key={idx}
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex items-center gap-4 p-4 rounded-sm border border-border bg-card/30 hover:bg-accent/50 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    >
-                      {/* Square Wrapper Icon */}
-                      <div className="w-10 h-10 shrink-0 flex items-center justify-center rounded-sm border border-border bg-background group-hover:border-emerald-500/20 transition-colors">
-                        {item.icon}
-                      </div>
-                      
-                      <div className="min-w-0">
-                        <span className="block font-mono text-[10px] tracking-widest text-muted-foreground uppercase leading-none mb-1">
-                          {item.label}
-                        </span>
-                        <span className="block text-sm font-light text-foreground group-hover:text-emerald-400 transition-colors truncate">
-                          {item.value}
-                        </span>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-
-                {/* Active Availability Badge container */}
-                <div className="pt-4 border-t border-border/60">
-                  <span className="text-[10px] font-mono tracking-widest text-muted-foreground uppercase block mb-3">
-                    // WORK_AVAILABILITY_STATUS:
-                  </span>
-                  
-                  <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 text-emerald-300">
-                    <CalendarClock size={14} className="shrink-0 text-emerald-400" />
-                    <span className="text-xs font-mono tracking-wider">
-                      {photographerInfo.availability}
+          <InView delay={0.1} className="lg:sticky lg:top-28 lg:self-start">
+            <Eyebrow>Direct</Eyebrow>
+            <ul className="divide-y divide-foreground/10 border-y border-foreground/10">
+              {channels.map((c) => (
+                <li key={c.label}>
+                  <a
+                    href={c.href}
+                    {...(c.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    className="group flex items-center justify-between gap-4 py-5"
+                  >
+                    <span>
+                      <span className="block font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{c.label}</span>
+                      <span className="mt-1 block break-all text-lg font-medium text-foreground transition-colors group-hover:text-emerald-500">{c.value}</span>
                     </span>
-                  </div>
-                </div>
+                    <ArrowUpRight size={20} className="shrink-0 text-muted-foreground transition-all duration-300 group-hover:rotate-45 group-hover:text-emerald-500" />
+                  </a>
+                </li>
+              ))}
+            </ul>
 
+            <div className="mt-10 rounded-3xl border border-foreground/10 bg-secondary/40 p-6">
+              <div className="flex items-center gap-2.5 text-sm font-medium text-foreground">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                </span>
+                {photographerInfo.availability}
               </div>
-            </ScrollReveal>
-          </div>
-
+              <p className="mt-3 text-sm text-muted-foreground">
+                {photographerInfo.location} · <LiveClock /> PKT
+              </p>
+            </div>
+          </InView>
         </div>
       </section>
-
     </PageTransition>
   );
 }

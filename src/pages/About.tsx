@@ -1,298 +1,207 @@
-import { useState } from 'react';
-import { Mail, Github, Linkedin, Download, Terminal } from 'lucide-react';
-import { motion, useReducedMotion } from 'motion/react';
+import { ArrowUpRight, Download, Github, Mail, MapPin, GraduationCap } from 'lucide-react';
 import { photographerInfo } from '../data/photographer';
 import { SEOHead } from '../components/seo/SEOHead';
-import { ScrollReveal } from '../components/ui/ScrollReveal';
 import { PageTransition } from '../components/ui/PageTransition';
-import { AnimatedCounter } from '../components/ui/AnimatedCounter';
-import { AboutVideo } from '../components/ui/AboutVideo';
-import { cn } from '../lib/utils';
-import { MatrixRain } from '../components/portfolio/MatrixRain';
+import { CountUp, RevealWords } from '../components/ui/Kinetic';
+import { motion, useReducedMotion } from 'motion/react';
+import { BTN_GHOST, BTN_PRIMARY, CONTAINER, ContactCTA, EASE, Eyebrow, InView, PageHero } from '../components/ui/Premium';
 
 export default function About() {
-  const [mediaTab, setMediaTab] = useState<'demo' | 'loop'>('demo');
-  const shouldReduceMotion = useReducedMotion();
-  const bioParagraphs = photographerInfo.biography.split('\n\n');
+  const reduce = useReducedMotion();
+  const bio = photographerInfo.biography.split('\n\n');
+  const approach = photographerInfo.approach.split('\n\n');
+  const experience = photographerInfo.awards.map((a) => {
+    const m = a.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+    return m ? { title: m[1], period: m[2] } : { title: a, period: '' };
+  });
 
-  // Slide entrance configurations
-  const slideLeftVariants = {
-    hidden: { 
-      opacity: 0, 
-      x: shouldReduceMotion ? 0 : -10 
-    },
-    visible: { 
-      opacity: 1, 
-      x: 0,
-      transition: { 
-        duration: 0.8, 
-        delay: 0.1, 
-        ease: 'easeOut' 
-      }
-    }
-  };
+  const stats = [
+    { n: 12, s: '+', label: 'Projects shipped' },
+    { n: 45, s: 'k+', label: 'Lines of code' },
+    { n: 850, s: '+', label: 'Git commits' },
+    { n: 100, s: '%', label: 'Client satisfaction' },
+  ];
 
-  const slideRightVariants = {
-    hidden: { 
-      opacity: 0, 
-      x: shouldReduceMotion ? 0 : 10 
-    },
-    visible: { 
-      opacity: 1, 
-      x: 0,
-      transition: { 
-        duration: 0.8, 
-        delay: 0.1, 
-        ease: 'easeOut' 
-      }
-    }
-  };
+  const facts = [
+    { icon: Mail, label: 'Email', value: photographerInfo.email, href: `mailto:${photographerInfo.email}` },
+    { icon: MapPin, label: 'Based in', value: photographerInfo.location },
+    { icon: GraduationCap, label: 'Education', value: photographerInfo.education },
+  ];
 
   return (
     <PageTransition>
-      <SEOHead 
-        title="About" 
-        description="Learn more about Jamshaid Ghafoor, Full-Stack Developer and MERN Specialist currently pursuing BSCS in Islamabad, Pakistan." 
+      <SEOHead
+        title="About"
+        description="Learn more about Jamshaid Ghafoor, Full-Stack Developer and MERN Specialist currently pursuing BSCS in Islamabad, Pakistan."
       />
 
-      {/* SECTION A: PAGE HERO */}
-      <section className="py-24 md:py-32 border-b border-border bg-card/10 relative overflow-hidden">
-        {/* Layer 1: Absolute MatrixRain Background */}
-        <MatrixRain opacity={0.1} />
-
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <ScrollReveal>
-            <span className="text-[10px] md:text-xs font-mono tracking-widest text-emerald-500 uppercase block mb-4">
-              // BIOGRAPHICAL_RECORDS
+      <PageHero
+        eyebrow="About me"
+        lines={['Code with', <>craft &amp; <span className="text-gradient-anim italic pr-[0.06em]">care.</span></>]}
+        intro={photographerInfo.tagline}
+        aside={
+          <div className="inline-flex items-center gap-2.5 rounded-full border border-foreground/15 bg-background/50 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.2em] text-foreground">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-light tracking-wide text-foreground font-sans uppercase">
-              About
-            </h1>
-            <p className="text-muted-foreground font-light text-lg md:text-xl max-w-xl mx-auto mt-4 leading-relaxed">
-              Full-Stack Developer & MERN Specialist.
-            </p>
-          </ScrollReveal>
-        </div>
-      </section>
+            Available for work
+          </div>
+        }
+      />
 
-      {/* SECTION B: SPLIT DETAILED LAYOUT */}
-      <section className="py-16 md:py-24 max-w-7xl mx-auto px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-          
-          {/* LEFT SIDE COLUMN: Autoplay loop video + Social links deck */}
-          <motion.div
-            variants={slideLeftVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-40px' }}
-            className="space-y-6 lg:col-span-5"
-          >
-            {/* Interactive media player tabs */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border/80 pb-3 gap-2 font-mono text-[10px] tracking-widest text-muted-foreground uppercase select-none">
-              <span>// CHOOSE_MEDIA_SOURCE</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setMediaTab('demo')}
-                  className={cn(
-                    "px-2.5 py-1 rounded-sm border transition-colors cursor-pointer text-[9px] sm:text-[10px]",
-                    mediaTab === 'demo'
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 font-medium"
-                      : "border-border/60 hover:border-foreground/20 hover:bg-accent"
-                  )}
-                >
-                  [ WORKSPACE_CAM ]
-                </button>
-                <button
-                  onClick={() => setMediaTab('loop')}
-                  className={cn(
-                    "px-2.5 py-1 rounded-sm border transition-colors cursor-pointer text-[9px] sm:text-[10px]",
-                    mediaTab === 'loop'
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 font-medium"
-                      : "border-border/60 hover:border-foreground/20 hover:bg-accent"
-                  )}
-                >
-                  [ DEV_ENV_LOOP ]
-                </button>
-              </div>
-            </div>
-
-            {/* Visual looping code workspace media player */}
-            <div className="aspect-[3/4] overflow-hidden rounded-sm bg-zinc-950 border border-border relative shadow-lg">
-              {mediaTab === 'demo' ? (
-                <div className="w-full h-full relative">
-                  <video
-                    className="w-full h-full object-cover opacity-80 grayscale hover:grayscale-0 transition-all duration-700"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="auto"
-                  >
-                    <source src="/about_video.mp4" type="video/mp4" />
-                    <source src="/uploaded_video.mp4" type="video/mp4" />
-                    <source src="https://videos.pexels.com/video-files/3129957/3129957-sd_640_360_25fps.mp4" type="video/mp4" />
-                  </video>
-                  {/* CRT Scanline styling effect */}
-                  <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.15)_50%)] bg-[size:100%_4px] opacity-30" />
+      {/* Portrait + bio */}
+      <section className={`${CONTAINER} py-16 md:py-24`} aria-label="Biography">
+        <div className="grid items-start gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
+          <InView className="lg:sticky lg:top-28">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-[28px] bg-gradient-to-br from-emerald-900/60 via-zinc-900 to-violet-950">
+              <video
+                className="absolute inset-0 h-full w-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                poster={photographerInfo.portraitImage}
+              >
+                <source src="https://videos.pexels.com/video-files/3129957/3129957-sd_640_360_25fps.mp4" type="video/mp4" />
+              </video>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+              <div className="absolute inset-x-5 bottom-5 flex items-end justify-between text-white">
+                <div>
+                  <div className="text-2xl font-semibold tracking-[-0.03em]">{photographerInfo.name}</div>
+                  <div className="text-sm text-white/70">Full-stack developer</div>
                 </div>
-              ) : (
-                <AboutVideo />
-              )}
-              {/* Overlapping terminal badge */}
-              <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-2.5 py-1 bg-black/60 border border-emerald-500/20 rounded-sm font-mono text-[9px] tracking-wider text-emerald-300 pointer-events-none">
-                <Terminal size={10} className="animate-pulse" />
-                <span>{mediaTab === 'demo' ? 'WORKSPACE_FEED_01' : 'DEV_ENVIRONMENT_01'}</span>
+                <span className="rounded-full bg-white/15 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em]">PK · GMT+5</span>
               </div>
             </div>
+          </InView>
 
-            {/* Micro horizontal social buttons row */}
-            <div className="flex items-center gap-2 w-full">
-              {/* Mail shortcut */}
-              <a
-                href={`mailto:${photographerInfo.email}`}
-                className="flex-1 p-3 border border-border rounded-sm hover:bg-accent text-foreground transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                aria-label="Send direct Email"
-              >
-                <Mail size={16} />
+          <div>
+            <InView>
+              <p className="text-[clamp(1.4rem,2.5vw,2.2rem)] font-medium leading-[1.25] tracking-[-0.03em] text-foreground">{bio[0]}</p>
+            </InView>
+            {bio.slice(1).map((p, i) => (
+              <InView key={i} delay={0.05}>
+                <p className="mt-8 text-lg leading-relaxed text-muted-foreground">{p}</p>
+              </InView>
+            ))}
+
+            <InView delay={0.1}>
+              <dl className="mt-12 divide-y divide-foreground/10 border-y border-foreground/10">
+                {facts.map((f) => (
+                  <div key={f.label} className="grid grid-cols-[auto_1fr] items-center gap-5 py-5 sm:grid-cols-[180px_1fr]">
+                    <dt className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                      <f.icon size={15} className="text-emerald-500" />
+                      {f.label}
+                    </dt>
+                    <dd className="text-right text-foreground sm:text-left">
+                      {f.href ? (
+                        <a href={f.href} className="break-all hover:text-emerald-500">
+                          {f.value}
+                        </a>
+                      ) : (
+                        f.value
+                      )}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </InView>
+
+            <InView delay={0.15} className="mt-10 flex flex-wrap gap-3">
+              <a href="/resume.pdf" download="Jamshaid_Ghafoor_Resume.pdf" className={BTN_PRIMARY}>
+                <Download size={16} /> Download resume
               </a>
-
-              {/* GitHub */}
-              <a
-                href="https://github.com/jamshaid-0206"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 p-3 border border-border rounded-sm hover:bg-accent text-foreground transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                aria-label="View Github account"
-              >
-                <Github size={16} />
+              <a href={photographerInfo.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className={BTN_GHOST}>
+                <Github size={16} /> GitHub
+                <ArrowUpRight size={15} className="transition-transform group-hover:rotate-45" />
               </a>
-
-              {/* LinkedIn */}
-              <a
-                href="https://github.com/jamshaid-0206"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 p-3 border border-border rounded-sm hover:bg-accent text-foreground transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                aria-label="Visit LinkedIn profile"
-              >
-                <Linkedin size={16} />
-              </a>
-            </div>
-          </motion.div>
-
-          {/* RIGHT SIDE COLUMN: Biography, Location details and Resume download */}
-          <motion.div
-            variants={slideRightVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-40px' }}
-            className="text-left space-y-6 flex flex-col items-start lg:col-span-7"
-          >
-            {/* Header elements */}
-            <div className="space-y-2">
-              <h2 className="text-3xl md:text-4xl font-light tracking-wide text-foreground">
-                {photographerInfo.name}
-              </h2>
-              <p className="font-mono text-xs md:text-sm text-emerald-400 tracking-wide">
-                &gt; {photographerInfo.tagline}
-              </p>
-            </div>
-
-            {/* Separator Line */}
-            <div className="h-px w-full bg-border" />
-
-            {/* Paragraph iteration */}
-            <div className="space-y-4 text-base md:text-lg font-light leading-relaxed text-muted-foreground select-text">
-              {bioParagraphs.map((para, idx) => (
-                <p key={idx}>{para}</p>
-              ))}
-            </div>
-
-            {/* Quantitative experience metrics block */}
-            <div className="grid grid-cols-2 gap-4 w-full pt-2">
-              <div className="border border-border/80 rounded-sm p-4 bg-card/20 flex flex-col items-start space-y-1 hover:border-emerald-500/10 transition-colors">
-                <span className="font-mono text-[9px] md:text-[10px] tracking-widest text-muted-foreground uppercase">// PROJECTS_SHIPPED:</span>
-                <span className="text-2xl md:text-3xl font-light text-emerald-400">
-                  <AnimatedCounter value={12} suffix="+" />
-                </span>
-              </div>
-              <div className="border border-border/80 rounded-sm p-4 bg-card/20 flex flex-col items-start space-y-1 hover:border-emerald-500/10 transition-colors">
-                <span className="font-mono text-[9px] md:text-[10px] tracking-widest text-muted-foreground uppercase">// LINES_OF_CODE:</span>
-                <span className="text-2xl md:text-3xl font-light text-emerald-400">
-                  <AnimatedCounter value={45} suffix="k+" />
-                </span>
-              </div>
-              <div className="border border-border/80 rounded-sm p-4 bg-card/20 flex flex-col items-start space-y-1 hover:border-emerald-500/10 transition-colors">
-                <span className="font-mono text-[9px] md:text-[10px] tracking-widest text-muted-foreground uppercase">// GIT_COMMITS:</span>
-                <span className="text-2xl md:text-3xl font-light text-emerald-400">
-                  <AnimatedCounter value={850} suffix="+" />
-                </span>
-              </div>
-              <div className="border border-border/80 rounded-sm p-4 bg-card/20 flex flex-col items-start space-y-1 hover:border-emerald-500/10 transition-colors">
-                <span className="font-mono text-[9px] md:text-[10px] tracking-widest text-muted-foreground uppercase">// SUCCESS_RATE:</span>
-                <span className="text-2xl md:text-3xl font-light text-emerald-400">
-                  <AnimatedCounter value={100} suffix="%" />
-                </span>
-              </div>
-            </div>
-
-            {/* Metadata properties stack */}
-            <div className="border border-border/80 rounded-sm p-5 w-full bg-card/25 space-y-3 font-mono text-xs md:text-sm select-all">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground tracking-widest uppercase">// EMAIL:</span>
-                <span className="text-foreground text-right">{photographerInfo.email}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground tracking-widest uppercase">// LOCATION:</span>
-                <span className="text-foreground text-right">{photographerInfo.location}</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground tracking-widest uppercase">// HIGHER_EDUCATION:</span>
-                <span className="text-foreground text-right truncate max-w-[200px] md:max-w-xs">{photographerInfo.education}</span>
-              </div>
-            </div>
-
-            {/* Emerald resume download button */}
-            <div className="pt-4">
-              <a
-                href="/resume.pdf"
-                download="Jamshaid_Ghafoor_Resume.pdf"
-                className="inline-flex items-center gap-2.5 px-6 py-3 border border-emerald-400/60 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/25 active:bg-emerald-500/30 font-mono text-xs md:text-sm tracking-wider uppercase rounded-sm transition-all duration-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 select-none cursor-pointer"
-              >
-                <Download size={14} />
-                <span>download.resume()</span>
-              </a>
-            </div>
-          </motion.div>
-
+            </InView>
+          </div>
         </div>
       </section>
 
-      {/* SECTION C: EXTRAS OR APPROACH BANNER */}
-      <section className="py-16 md:py-24 border-t border-border bg-card/5">
-        <div className="max-w-4xl mx-auto px-6 text-center space-y-8">
-          <ScrollReveal>
-            <span className="text-[10px] md:text-xs font-mono tracking-widest text-emerald-500 uppercase block mb-2">
-              // PHILOSOPHICAL_APPROACH
-            </span>
-            <h3 className="text-2xl md:text-3xl font-light tracking-wide text-foreground">
-              Development Approach & Values
-            </h3>
-            <div className="h-px w-16 bg-emerald-500/30 mx-auto my-4" />
-          </ScrollReveal>
-
-          <ScrollReveal delay={0.15}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left text-sm md:text-base font-light text-muted-foreground leading-relaxed select-text">
-              {photographerInfo.approach.split('\n\n').map((para, idx) => (
-                <p key={idx} className="bg-card/20 p-6 rounded-sm border border-border/40 hover:border-emerald-500/10 transition-colors">
-                  {para}
-                </p>
-              ))}
-            </div>
-          </ScrollReveal>
+      {/* Stats */}
+      <section className={`${CONTAINER} py-16`} aria-label="Numbers">
+        <div className="grid grid-cols-2 gap-y-12 md:grid-cols-4">
+          {stats.map((s, i) => (
+            <InView key={s.label} delay={i * 0.08} className="border-l border-foreground/10 pl-5 md:pl-8">
+              <div className="text-[clamp(3rem,7vw,6.5rem)] font-semibold leading-none tracking-[-0.05em] text-foreground">
+                <CountUp to={s.n} suffix={s.s} />
+              </div>
+              <div className="mt-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{s.label}</div>
+            </InView>
+          ))}
         </div>
       </section>
 
+      {/* Experience */}
+      <section className={`${CONTAINER} py-20 md:py-32`} aria-label="Experience">
+        <Eyebrow>Experience & milestones</Eyebrow>
+        <ul className="border-b border-foreground/10">
+          {experience.map((e, i) => (
+            <motion.li
+              key={e.title}
+              initial={reduce ? false : { opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.8, delay: i * 0.06, ease: EASE }}
+              className="service-row group relative border-t border-foreground/10"
+            >
+                <div className="relative z-10 grid grid-cols-[auto_1fr] items-center gap-5 py-7 text-foreground transition-colors duration-500 group-hover:text-black md:grid-cols-[auto_1fr_auto] md:gap-10 md:px-6 md:py-9">
+                  <span className="font-mono text-xs text-muted-foreground transition-colors duration-500 group-hover:text-black/60">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span className="text-[clamp(1.4rem,3.4vw,3rem)] font-semibold leading-tight tracking-[-0.035em] transition-transform duration-500 md:group-hover:translate-x-3">
+                    {e.title}
+                  </span>
+                  {e.period && (
+                    <span className="col-start-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground transition-colors duration-500 group-hover:text-black/70 md:col-start-auto">
+                      {e.period}
+                    </span>
+                  )}
+                </div>
+            </motion.li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Skills */}
+      <section className="border-y border-foreground/10 bg-secondary/40 py-20 md:py-28" aria-label="Skills">
+        <div className={`${CONTAINER} grid gap-12 lg:grid-cols-[1fr_1.4fr]`}>
+          <div>
+            <Eyebrow>Toolkit</Eyebrow>
+            <h2 className="text-[clamp(2.5rem,6vw,5.5rem)] font-semibold leading-[0.92] tracking-[-0.05em] text-foreground">
+              <RevealWords text="What I work with." />
+            </h2>
+          </div>
+          <div className="flex flex-wrap content-start gap-3">
+            {photographerInfo.clients.map((s, i) => (
+              <InView key={s} delay={i * 0.03} y={20}>
+                <span className="inline-block rounded-full border border-foreground/15 bg-background px-5 py-3 text-base font-medium text-foreground transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500 hover:bg-emerald-500 hover:text-black md:text-lg">
+                  {s}
+                </span>
+              </InView>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Approach */}
+      <section className={`${CONTAINER} py-20 md:py-32`} aria-label="Approach">
+        <Eyebrow>How I work</Eyebrow>
+        <div className="grid gap-10 md:grid-cols-2 md:gap-16">
+          {approach.map((p, i) => (
+            <InView key={i} delay={i * 0.1}>
+              <div className="font-mono text-sm text-emerald-500">0{i + 1}</div>
+              <p className="mt-4 text-xl leading-relaxed text-foreground md:text-2xl md:leading-relaxed">{p}</p>
+            </InView>
+          ))}
+        </div>
+      </section>
+
+      <ContactCTA />
     </PageTransition>
   );
 }

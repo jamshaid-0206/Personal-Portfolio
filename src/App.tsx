@@ -87,9 +87,8 @@ export default function App() {
             <AppRoutes />
             <Toaster
               position="bottom-right"
-              theme="dark"
               toastOptions={{
-                className: 'font-mono border border-border bg-black text-foreground rounded-sm shadow-md',
+                className: '!rounded-2xl !border !border-foreground/10 !bg-background !text-foreground !shadow-xl',
                 duration: 5000,
               }}
             />

@@ -8,7 +8,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2.5 rounded-sm border border-transparent hover:border-border hover:bg-accent/40 text-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 select-none cursor-pointer relative overflow-hidden"
+      className="grid h-11 w-11 place-items-center rounded-full border border-foreground/15 bg-background/60 hover:border-emerald-500 text-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 select-none cursor-pointer relative overflow-hidden"
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
       <AnimatePresence mode="wait" initial={false}>

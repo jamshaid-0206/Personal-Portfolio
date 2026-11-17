@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion, useScroll, useTransform, MotionValue } from 'motion/react';
 import { ArrowRight, ArrowUpRight, Download, Github, Terminal } from 'lucide-react';
@@ -12,68 +12,7 @@ import { Magnetic } from '../components/ui/Magnetic';
 import { HeroShader } from '../components/ui/HeroShader';
 import { useTheme } from '../components/providers/ThemeProvider';
 import { CountUp, RevealWords, ScrambleText, VelocityMarquee } from '../components/ui/Kinetic';
-
-const EASE = [0.16, 1, 0.3, 1] as const;
-
-/* ---------------------------- helpers ---------------------------- */
-function LiveClock() {
-  const ref = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    const tick = () => {
-      if (ref.current)
-        ref.current.textContent = new Date().toLocaleTimeString('en-GB', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          timeZone: 'Asia/Karachi',
-        });
-    };
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
-  }, []);
-  return <span ref={ref} className="tabular-nums" />;
-}
-
-/** One masked headline line that slides up into view. */
-function Line({ children, delay }: { children: React.ReactNode; delay: number }) {
-  const reduce = useReducedMotion();
-  return (
-    <span className="block overflow-hidden pb-[0.08em] -mb-[0.08em]">
-      <motion.span
-        className="block will-change-transform"
-        initial={reduce ? false : { y: '105%', rotate: 3 }}
-        animate={{ y: '0%', rotate: 0 }}
-        transition={{ duration: 1.15, delay, ease: EASE }}
-      >
-        {children}
-      </motion.span>
-    </span>
-  );
-}
-
-function FadeUp({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
-  const reduce = useReducedMotion();
-  return (
-    <motion.div
-      className={className}
-      initial={reduce ? false : { opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.9, delay, ease: EASE }}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-6 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-400">
-      <span className="h-px w-10 bg-current" />
-      {children}
-    </div>
-  );
-}
+import { ContactCTA, EASE, Eyebrow, FadeUp, Line, LiveClock } from '../components/ui/Premium';
 
 /* ============================== HERO ============================== */
 function Hero() {
@@ -453,47 +392,6 @@ function TerminalSection() {
   );
 }
 
-/* ============================== CTA =============================== */
-function BigCTA() {
-  const ref = useRef<HTMLElement>(null);
-  const reduce = useReducedMotion();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end end'] });
-  const y = useTransform(scrollYProgress, [0, 1], ['30%', '0%']);
-  return (
-    <section ref={ref} aria-label="Contact" className="relative overflow-hidden px-5 pb-16 pt-28 sm:px-8 md:pt-40 lg:px-12">
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%] bg-[radial-gradient(60%_80%_at_50%_100%,rgba(16,185,129,0.22),transparent_70%)]" />
-      <motion.div style={reduce ? undefined : { y }} className="relative mx-auto max-w-[1400px]">
-        <Eyebrow>Have a project in mind?</Eyebrow>
-        <h2 className="text-[clamp(3.5rem,13vw,13rem)] font-semibold leading-[0.85] tracking-[-0.06em] text-foreground">
-          Let's work
-          <br />
-          <span className="text-gradient-anim italic pr-[0.06em]">together.</span>
-        </h2>
-        <div className="mt-12 flex flex-col gap-10 md:mt-16 md:flex-row md:items-center md:justify-between">
-          <a
-            href={`mailto:${photographerInfo.email}`}
-            className="group relative w-fit break-all text-xl font-medium text-foreground sm:text-2xl md:text-3xl"
-          >
-            {photographerInfo.email}
-            <span className="absolute -bottom-1 left-0 h-[2px] w-full origin-left scale-x-0 bg-emerald-500 transition-transform duration-500 group-hover:scale-x-100" />
-          </a>
-          <Magnetic>
-            <Link
-              to="/contact"
-              className="btn-shine group relative grid h-36 w-36 place-items-center overflow-hidden rounded-full bg-emerald-500 text-sm font-semibold text-black shadow-[0_20px_80px_-20px_rgba(16,185,129,0.9)] transition-transform duration-500 hover:scale-110 md:h-44 md:w-44"
-            >
-              <span className="flex flex-col items-center gap-2">
-                <ArrowUpRight size={28} className="transition-transform duration-500 group-hover:rotate-45" />
-                Get in touch
-              </span>
-            </Link>
-          </Magnetic>
-        </div>
-      </motion.div>
-    </section>
-  );
-}
-
 export default function Home() {
   return (
     <PageTransition>
@@ -505,7 +403,7 @@ export default function Home() {
       <Services />
       <Stats />
       <TerminalSection />
-      <BigCTA />
+      <ContactCTA />
     </PageTransition>
   );
 }
