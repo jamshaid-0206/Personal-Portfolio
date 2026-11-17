@@ -4,6 +4,7 @@ import { SEOHead } from '../components/seo/SEOHead';
 import { PageTransition } from '../components/ui/PageTransition';
 import { CountUp, RevealWords } from '../components/ui/Kinetic';
 import { motion, useReducedMotion } from 'motion/react';
+import { PortraitCard } from '../components/ui/PortraitCard';
 import { BTN_GHOST, BTN_PRIMARY, CONTAINER, ContactCTA, EASE, Eyebrow, InView, PageHero } from '../components/ui/Premium';
 
 export default function About() {
@@ -54,27 +55,7 @@ export default function About() {
       <section className={`${CONTAINER} py-16 md:py-24`} aria-label="Biography">
         <div className="grid items-start gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
           <InView className="lg:sticky lg:top-28">
-            <div className="relative aspect-[4/5] overflow-hidden rounded-[28px] bg-gradient-to-br from-emerald-900/60 via-zinc-900 to-violet-950">
-              <video
-                className="absolute inset-0 h-full w-full object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="metadata"
-                poster={photographerInfo.portraitImage}
-              >
-                <source src="https://videos.pexels.com/video-files/3129957/3129957-sd_640_360_25fps.mp4" type="video/mp4" />
-              </video>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-              <div className="absolute inset-x-5 bottom-5 flex items-end justify-between text-white">
-                <div>
-                  <div className="text-2xl font-semibold tracking-[-0.03em]">{photographerInfo.name}</div>
-                  <div className="text-sm text-white/70">Full-stack developer</div>
-                </div>
-                <span className="rounded-full bg-white/15 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em]">PK · GMT+5</span>
-              </div>
-            </div>
+            <PortraitCard name={photographerInfo.name} role="Full-stack developer · MERN & React Native" />
           </InView>
 
           <div>

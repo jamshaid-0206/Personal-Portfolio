@@ -52,11 +52,42 @@ function devApi(): Plugin {
   };
 }
 
+/**
+ * Social link previews (WhatsApp, LinkedIn, X…) read static HTML only and need
+ * absolute image URLs. On Vercel the production domain is known at build time.
+ */
+function socialMeta(): Plugin {
+  const site =
+    process.env.SITE_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '');
+  return {
+    name: 'social-meta',
+    transformIndexHtml(html) {
+      if (!site) return html;
+      const base = site.replace(/\/$/, '');
+      const title = 'Jamshaid Ghafoor — Full-Stack Developer';
+      const desc = 'Full-stack developer building fast, beautiful web and mobile products with React, React Native, Node.js and WordPress.';
+      const tags = [
+        `<meta property="og:type" content="website" />`,
+        `<meta property="og:url" content="${base}/" />`,
+        `<meta property="og:title" content="${title}" />`,
+        `<meta property="og:description" content="${desc}" />`,
+        `<meta property="og:image" content="${base}/images/jamshaid-og.jpg" />`,
+        `<meta property="og:image:width" content="1200" />`,
+        `<meta property="og:image:height" content="630" />`,
+        `<meta name="twitter:card" content="summary_large_image" />`,
+        `<meta name="twitter:image" content="${base}/images/jamshaid-og.jpg" />`,
+      ].join('\n    ');
+      return html.replace('</head>', `    ${tags}\n  </head>`);
+    },
+  };
+}
+
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, process.cwd(), ['ELEVENLABS_', 'GEMINI_']);
   Object.assign(process.env, env);
   return {
-    plugins: [react(), tailwindcss(), devApi()],
+    plugins: [react(), tailwindcss(), devApi(), socialMeta()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

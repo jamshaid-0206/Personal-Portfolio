@@ -19,7 +19,9 @@ export function SEOHead({ title, description, image, slug }: SEOHeadProps) {
     : `${siteName} — Full-Stack Developer`;
     
   const metaDescription = (description || defaultDesc).substring(0, 160);
-  const ogImage = image || photographerInfo.portraitImage;
+  const rawImage = image || photographerInfo.portraitImage;
+  // Social cards need absolute URLs.
+  const ogImage = rawImage.startsWith('/') && typeof window !== 'undefined' ? `${window.location.origin}${rawImage}` : rawImage;
 
   return (
     <Helmet>

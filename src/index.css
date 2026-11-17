@@ -303,3 +303,20 @@
   0%, 100% { transform: scaleY(0.3); }
   50% { transform: scaleY(1); }
 }
+
+/* Portrait card: rotating gradient ring (animates a custom property, no repaint of the photo) */
+@property --ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+.portrait-ring {
+  background: conic-gradient(from var(--ring-angle), #10b981, #22d3ee, #a78bfa, #10b981 60%, rgba(16, 185, 129, 0.15) 75%, #10b981);
+  animation: ring-spin 6s linear infinite;
+}
+@keyframes ring-spin {
+  to { --ring-angle: 360deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portrait-ring { animation: none; }
+}
