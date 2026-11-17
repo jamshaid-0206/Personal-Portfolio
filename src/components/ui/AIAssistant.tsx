@@ -1,466 +1,647 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
-import { Bot, X, Send, Sparkles, Terminal, ArrowUpRight, Cpu, HelpCircle, Code2, Volume2, VolumeX } from 'lucide-react';
-import { photographerInfo } from '../../data/photographer';
-import { projects } from '../../data/projects';
-import { VoicePulseAnalyzer } from './VoicePulseAnalyzer';
-import { SystemMonitor } from './SystemMonitor';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { ArrowUp, Mic, RotateCcw, Sparkles, Square, Volume2, VolumeX, X } from 'lucide-react';
+import { ASSISTANT_NAME, STARTER_PROMPTS, WELCOME } from '../../data/assistant';
+import { AssistantAction, localReply, parseActions, suggestionsFor } from '../../lib/assistantBrain';
 import { speakWithClonedVoice, stopVoice } from '../../lib/voice';
+import { cn } from '../../lib/utils';
 
-interface Message {
+/* ------------------------------------------------------------------ */
+/* Types & persistence                                                 */
+/* ------------------------------------------------------------------ */
+interface Msg {
   id: string;
-  sender: 'ai' | 'user';
+  role: 'user' | 'assistant';
   text: string;
-  timestamp: string;
-  isSystem?: boolean;
+  actions?: AssistantAction[];
+  suggestions?: string[];
+  streaming?: boolean;
 }
 
-const PRESET_PROMPTS = [
-  { text: "Who is Jamshaid Ghafoor?", category: "intro" },
-  { text: "Explain Project: Hostelmate", category: "project" },
-  { text: "Explain Project: Readability Pro", category: "project" },
-  { text: "What is his tech stack?", category: "skills" },
-  { text: "Is he available for hire?", category: "hire" }
-];
+const STORE_KEY = 'jg_ai_chat_v2';
+const MUTE_KEY = 'jg_ai_assistant_muted';
+const NUDGE_KEY = 'jg_ai_nudged';
+const uid = () => Math.random().toString(36).slice(2);
+const welcomeMsg = (): Msg => ({ id: 'welcome', role: 'assistant', text: WELCOME });
 
-export function AIAssistant() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      sender: 'ai',
-      text: "GREETINGS, EXPLORER. I am JG_HOLOGRAPHIC_COGNITIVE_INTERFACE_V4.\n\nI can introduce you to Jamshaid Ghafoor, dissect his core systems architectures, display his technical stack, or guide you to his portfolio blueprints.",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+const load = (): Msg[] => {
+  try {
+    const raw = sessionStorage.getItem(STORE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Msg[]) : null;
+    if (parsed?.length) return parsed.filter((m) => m.text).map((m) => ({ ...m, streaming: false }));
+  } catch {
+    /* storage unavailable */
+  }
+  return [welcomeMsg()];
+};
+const safeGet = (k: string) => {
+  try {
+    return localStorage.getItem(k);
+  } catch {
+    return null;
+  }
+};
+const safeSet = (kind: 'local' | 'session', k: string, v: string) => {
+  try {
+    (kind === 'local' ? localStorage : sessionStorage).setItem(k, v);
+  } catch {
+    /* storage unavailable */
+  }
+};
+
+/* ------------------------------------------------------------------ */
+/* AI transport: streamed Gemini via /api/chat, local brain fallback   */
+/* ------------------------------------------------------------------ */
+let aiUnavailable = false;
+
+async function streamAI(history: Msg[], onChunk: (full: string) => void, signal: AbortSignal): Promise<string | null> {
+  if (aiUnavailable) return null;
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal,
+      body: JSON.stringify({
+        messages: history.filter((m) => m.id !== 'welcome' && m.text).map((m) => ({ role: m.role, content: m.text })),
+      }),
+    });
+    const type = res.headers.get('content-type') || '';
+    if (!res.ok || !res.body || !type.startsWith('text/plain')) {
+      aiUnavailable = true; // not deployed / not configured / upstream error → local brain this visit
+      return null;
     }
-  ]);
-  const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isMuted, setIsMuted] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('jg_ai_assistant_muted');
-      return saved ? saved === 'true' : false; // Unmuted by default so they can hear speech immediately
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let full = '';
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      full += dec.decode(value, { stream: true });
+      onChunk(full);
     }
-    return false;
+    return full.trim() || null;
+  } catch (e) {
+    if ((e as Error)?.name !== 'AbortError') aiUnavailable = true;
+    return null;
+  }
+}
+
+/** Short, speakable version of a reply (keeps voice credits low). */
+function toSpeech(text: string): string {
+  const plain = text
+    .replace(/\*\*/g, '')
+    .replace(/^- /gm, '')
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/\s*\n+\s*/g, '. ')
+    .replace(/([.!?])\s*\./g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (plain.length <= 360) return plain;
+  const cut = plain.slice(0, 360);
+  const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('? '), cut.lastIndexOf('! '));
+  return end > 120 ? cut.slice(0, end + 1) : cut + '…';
+}
+
+/* ------------------------------------------------------------------ */
+/* Lightweight rich text (bold, bullets, links) — no innerHTML          */
+/* ------------------------------------------------------------------ */
+function Inline({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*|[\w.+-]+@[\w-]+\.[\w.]+|https?:\/\/[^\s)]+)/g);
+  return (
+    <>
+      {parts.map((p, i) => {
+        if (/^\*\*[^*]+\*\*$/.test(p))
+          return (
+            <strong key={i} className="font-semibold">
+              {p.slice(2, -2)}
+            </strong>
+          );
+        if (/^[\w.+-]+@[\w-]+\.[\w.]+$/.test(p))
+          return (
+            <a key={i} href={`mailto:${p}`} className="underline decoration-emerald-500/60 underline-offset-2 hover:text-emerald-500">
+              {p}
+            </a>
+          );
+        if (/^https?:\/\//.test(p))
+          return (
+            <a key={i} href={p} target="_blank" rel="noopener noreferrer" className="break-all underline decoration-emerald-500/60 underline-offset-2 hover:text-emerald-500">
+              {p.replace(/^https?:\/\//, '')}
+            </a>
+          );
+        return <React.Fragment key={i}>{p}</React.Fragment>;
+      })}
+    </>
+  );
+}
+
+function RichText({ text }: { text: string }) {
+  const blocks: React.ReactNode[] = [];
+  let list: string[] = [];
+  const flush = () => {
+    if (!list.length) return;
+    const items = list;
+    blocks.push(
+      <ul key={`l${blocks.length}`} className="my-1.5 space-y-1 [&:not(:first-child)]:mt-2">
+        {items.map((li, i) => (
+          <li key={i} className="flex gap-2">
+            <span className="mt-[0.6em] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+            <span>
+              <Inline text={li} />
+            </span>
+          </li>
+        ))}
+      </ul>
+    );
+    list = [];
+  };
+  text.split('\n').forEach((line) => {
+    const l = line.trim();
+    if (/^[-*•]\s+/.test(l)) list.push(l.replace(/^[-*•]\s+/, ''));
+    else {
+      flush();
+      if (l)
+        blocks.push(
+          <p key={`p${blocks.length}`} className="[&:not(:first-child)]:mt-2">
+            <Inline text={l} />
+          </p>
+        );
+    }
   });
-  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  flush();
+  return <>{blocks}</>;
+}
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const shouldReduceMotion = useReducedMotion();
+/* ------------------------------------------------------------------ */
+/* Small visual pieces                                                 */
+/* ------------------------------------------------------------------ */
+function Avatar({ size = 40 }: { size?: number }) {
+  return (
+    <span
+      className="relative inline-grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-cyan-400 font-bold text-black"
+      style={{ width: size, height: size, fontSize: size * 0.32 }}
+      aria-hidden="true"
+    >
+      JG
+      {size >= 36 && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-emerald-400" />}
+    </span>
+  );
+}
 
-  // Load synthesis voices dynamically (crucial for Chrome and modern mobile browsers)
+function SpeakingBars() {
+  return (
+    <span className="inline-flex h-3 items-end gap-[2px]" aria-hidden="true">
+      {[0, 1, 2, 3].map((i) => (
+        <span key={i} className="h-full w-[3px] origin-bottom rounded-full bg-emerald-500 animate-[eq_0.9s_ease-in-out_infinite]" style={{ animationDelay: `${i * 0.12}s` }} />
+      ))}
+    </span>
+  );
+}
+
+function TypingDots() {
+  return (
+    <span className="inline-flex gap-1 py-1.5" role="status" aria-label="Typing">
+      {[0, 1, 2].map((i) => (
+        <span key={i} className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-[typing_1.2s_ease-in-out_infinite]" style={{ animationDelay: `${i * 0.15}s` }} />
+      ))}
+    </span>
+  );
+}
+
+/* Web Speech API (voice input) — minimal typing */
+type SRResult = ArrayLike<{ transcript: string }> & { isFinal: boolean };
+interface SR {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: ((e: { results: ArrayLike<SRResult> }) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+}
+type SRCtor = new () => SR;
+const getRecognition = (): SRCtor | null => {
+  if (typeof window === 'undefined') return null;
+  const w = window as unknown as { SpeechRecognition?: SRCtor; webkitSpeechRecognition?: SRCtor };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+};
+
+/* ------------------------------------------------------------------ */
+/* Component                                                           */
+/* ------------------------------------------------------------------ */
+export function AIAssistant() {
+  const reduce = useReducedMotion();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<Msg[]>(load);
+  const [input, setInput] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [muted, setMuted] = useState(() => safeGet(MUTE_KEY) === 'true');
+  const [nudge, setNudge] = useState(false);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const recRef = useRef<SR | null>(null);
+  const greetedRef = useRef(false);
+  const [micSupported] = useState(() => !!getRecognition());
+
+  /* persistence */
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-
-    const loadVoices = () => {
-      const allVoices = window.speechSynthesis.getVoices();
-      setAvailableVoices(allVoices);
-    };
-
-    loadVoices();
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-  }, []);
-
-  // Handle saving of voice preferences to LocalStorage
+    safeSet('session', STORE_KEY, JSON.stringify(messages.filter((m) => !m.streaming).slice(-30)));
+  }, [messages]);
   useEffect(() => {
-    localStorage.setItem('jg_ai_assistant_muted', String(isMuted));
-    if (isMuted) {
+    safeSet('local', MUTE_KEY, String(muted));
+    if (muted) {
       stopVoice();
-      setIsSpeaking(false);
+      setSpeaking(false);
     }
-  }, [isMuted]);
+  }, [muted]);
 
-  // Clean speech synthesis helper that strips formatting, underscores, and custom technical markup
-  const speakText = (text: string) => {
-    if (typeof window === 'undefined') return;
+  /* gentle one-time nudge bubble */
+  useEffect(() => {
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem(NUDGE_KEY) === '1';
+    } catch {
+      /* ignore */
+    }
+    if (seen) return;
+    const id = window.setTimeout(() => setNudge(true), 9000);
+    return () => window.clearTimeout(id);
+  }, []);
+  const dismissNudge = () => {
+    setNudge(false);
+    safeSet('session', NUDGE_KEY, '1');
+  };
 
-    // Terminate any active speech (cloned voice or browser voice)
-    stopVoice();
+  /* auto-scroll */
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: reduce ? 'auto' : 'smooth' });
+  }, [messages, busy, open, reduce]);
 
-    if (isMuted) {
-      setIsSpeaking(false);
+  /* voice output: Chris (ElevenLabs) → browser voice fallback */
+  const speak = useCallback(
+    (text: string) => {
+      stopVoice();
+      if (muted || !text) return;
+      const spoken = toSpeech(text);
+      speakWithClonedVoice(spoken, { onStart: () => setSpeaking(true), onEnd: () => setSpeaking(false) }).then((ok) => {
+        if (ok || !window.speechSynthesis) return;
+        const u = new SpeechSynthesisUtterance(spoken);
+        const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.startsWith('en'));
+        u.voice = voices.find((v) => /natural|google|daniel|alex/i.test(v.name)) ?? voices[0] ?? null;
+        u.onstart = () => setSpeaking(true);
+        u.onend = u.onerror = () => setSpeaking(false);
+        window.speechSynthesis.speak(u);
+      });
+    },
+    [muted]
+  );
+
+  /* open / close side effects */
+  useEffect(() => {
+    if (!open) {
+      stopVoice();
+      setSpeaking(false);
+      recRef.current?.stop();
       return;
     }
-
-    // Process and clean text so that it reads out naturally and elegantly
-    let cleanText = text
-      .replace(/JG_HOLOGRAPHIC_COGNITIVE_INTERFACE_V4/gi, 'Jamshaid Ghafoor Holographic Assistant')
-      .replace(/JG_ASSISTANT_COGNITIVE_V4/gi, 'Jamshaid Ghafoor Cognitive Assistant')
-      .replace(/SYSTEM DISSECTION:/gi, 'System dissection:')
-      .replace(/JG_TECHNICAL_TELEMETRY:/gi, 'Technical telemetry:')
-      .replace(/AVAILABILITY_STATUS:/gi, 'Availability status:')
-      .replace(/ACTIVE_ACQUISITION/gi, 'Active Acquisition')
-      .replace(/COMMUNICATION_SHELL_CHANNELS:/gi, 'Communication channels:')
-      .replace(/ACADEMIC_CREDENTIALS:/gi, 'Academic credentials:')
-      .replace(/PROFESSIONAL_TIMELINE:/gi, 'Professional timeline:')
-      .replace(/CORE LOG: UNRECOGNIZED_QUERY/gi, 'Unrecognized query.')
-      .replace(/[\*\[\]\-#_]/g, ' ') // Strip Markdown tags, lists, brackets, and underscores
-      .replace(/\s+/g, ' ') // Collapse multiple whitespace blocks
-      .trim();
-
-    // 1) Jamshaid's own ElevenLabs voice; 2) browser voice as a fallback.
-    speakWithClonedVoice(cleanText, {
-      onStart: () => setIsSpeaking(true),
-      onEnd: () => setIsSpeaking(false),
-    }).then((played) => {
-      if (!played) speakWithBrowserVoice(cleanText);
-    });
-  };
-
-  const speakWithBrowserVoice = (cleanText: string) => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-
-    // Filter available English voices
-    const currentVoices = availableVoices.length > 0 ? availableVoices : window.speechSynthesis.getVoices();
-    const enVoices = currentVoices.filter((v) => v.lang.startsWith('en'));
-
-    // High-fidelity natural human male voice scoring strategy
-    const rateVoice = (voice: SpeechSynthesisVoice): number => {
-      const name = voice.name.toLowerCase();
-      let score = 0;
-
-      // Human-sounding names
-      const isMaleName = ['david', 'daniel', 'alex', 'mark', 'george', 'james', 'nathan', 'oliver', 'thomas', 'ravi', 'male'].some(p => name.includes(p));
-      if (isMaleName) score += 40;
-
-      // Google, Apple, Microsoft modern natural voices are exceptionally human-sounding
-      if (name.includes('natural')) score += 50;
-      if (name.includes('google')) score += 30;
-      if (name.includes('apple')) score += 30;
-      if (name.includes('microsoft')) score += 20;
-      if (name.includes('premium') || name.includes('enhanced')) score += 15;
-
-      return score;
+    dismissNudge();
+    if (!greetedRef.current && messages.length === 1) {
+      greetedRef.current = true;
+      window.setTimeout(() => speak(WELCOME), 350);
+    }
+    if (window.matchMedia('(hover: hover)').matches) window.setTimeout(() => inputRef.current?.focus(), 250);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    window.addEventListener('keydown', onKey);
+    const mobile = window.matchMedia('(max-width: 639px)').matches;
+    if (mobile) document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      if (mobile) document.body.style.overflow = '';
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-    // Sort voices to pick the one that sounds most human and masculine
-    const sortedVoices = [...enVoices].sort((a, b) => rateVoice(b) - rateVoice(a));
-    const selectedVoice = sortedVoices[0] || null;
+  useEffect(() => () => stopVoice(), []);
 
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
-    }
-
-    // Parameters optimized for an organic, smooth, and pleasant human delivery
-    utterance.rate = 0.98; // Natural, comfortable reading speed
-    utterance.pitch = 1.0; // Standard, organic human pitch to prevent robotic frequency artifacts
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    window.speechSynthesis.speak(utterance);
-  };
-
-  // Speak the introductory message once the user opens the panel
-  useEffect(() => {
-    if (isOpen && messages.length === 1 && messages[0].id === 'welcome') {
-      const timer = setTimeout(() => {
-        speakText(messages[0].text);
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
-
-  // Clean up synthesis on unmount
-  useEffect(() => {
-    return () => stopVoice();
-  }, []);
-
-  // Stop speaking when the panel is closed
-  useEffect(() => {
-    if (!isOpen) {
+  /* send a message */
+  const send = useCallback(
+    async (raw: string) => {
+      const text = raw.trim().slice(0, 600);
+      if (!text || busy) return;
       stopVoice();
-      setIsSpeaking(false);
-    }
-  }, [isOpen]);
+      setSpeaking(false);
+      setInput('');
 
-  useEffect(() => {
-    if (isOpen) {
-      scrollToBottom();
-    }
-  }, [messages, isOpen]);
+      const userMsg: Msg = { id: uid(), role: 'user', text };
+      const botId = uid();
+      const history = [...messages.map((m) => ({ ...m, suggestions: undefined })), userMsg];
+      setMessages([...history, { id: botId, role: 'assistant', text: '', streaming: true }]);
+      setBusy(true);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+      abortRef.current?.abort();
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
+      const timeout = window.setTimeout(() => ctrl.abort(), 20000);
+      const update = (patch: Partial<Msg>) => setMessages((ms) => ms.map((m) => (m.id === botId ? { ...m, ...patch } : m)));
 
-  const generateAIResponse = (input: string): string => {
-    const text = input.toLowerCase();
+      let partial = '';
+      const final = await streamAI(
+        history,
+        (full) => {
+          partial = full;
+          update({ text: parseActions(full).text });
+        },
+        ctrl.signal
+      );
+      window.clearTimeout(timeout);
+      if (ctrl.signal.aborted && abortRef.current !== ctrl) return; // replaced by reset / newer message
 
-    if (text.includes('who') || text.includes('about') || text.includes('introduce') || text.includes('jamshaid') || text.includes('ghafoor') || text.includes('biography')) {
-      return `Jamshaid Ghafoor is an innovative and detail-oriented Full-Stack Software Developer currently working as a Front-End Developer at Asian IT.\n\nHe is pursuing a Bachelor of Science in Computer Science at Abasyn University, Islamabad (Expected 2027) and specializes in building high-fidelity web and mobile platforms with clean architectures.`;
-    }
+      // Stopped or timed out mid-stream → keep what was already written.
+      let reply = final ? parseActions(final) : partial.trim() ? parseActions(partial) : null;
+      if (!reply) {
+        await new Promise((r) => setTimeout(r, 450)); // brief "thinking" beat for the local brain
+        reply = localReply(text);
+      }
+      update({ text: reply.text, actions: reply.actions, suggestions: suggestionsFor(text), streaming: false });
+      setBusy(false);
+      speak(reply.text);
+    },
+    [busy, messages, speak]
+  );
 
-    if (text.includes('hostelmate')) {
-      const p = projects.find(proj => proj.slug === 'hostelmate');
-      return `SYSTEM DISSECTION: Hostelmate\n\n- DESCRIPTION: ${p?.description || "A comprehensive cross-platform student residency solution."}\n- TECHNOLOGY: MERN, React Native, Firebase Auth, and offline-first Firestore syncing.\n- KEY OUTCOME: Optimized residence resource logging, admin oversight rails, and secure student accounts.`;
-    }
-
-    if (text.includes('readability') || text.includes('pro')) {
-      const p = projects.find(proj => proj.slug === 'readability-pro');
-      return `SYSTEM DISSECTION: Readability Pro\n\n- DESCRIPTION: ${p?.description || "An AI-powered writing analyzer and readability scoring platform."}\n- TECHNOLOGY: React, Node.js, Express, Google Gemini, and customized AST rule engines.\n- KEY OUTCOME: Accelerated written evaluation feedback speeds, custom AST processing, and core web vital optimization.`;
-    }
-
-    if (text.includes('stack') || text.includes('tech') || text.includes('skills') || text.includes('languages') || text.includes('frameworks')) {
-      return `JG_TECHNICAL_TELEMETRY:\n\n- FRONTEND: React, React Native, Redux, HTML5, CSS3, Tailwind CSS\n- BACKEND: Node.js, Express.js, RESTful APIs, MVC architecture\n- DATABASES: MongoDB, Firestore (NoSQL)\n- TOOLING & CONTROLS: Git, GitHub, VS Code, agile sprint configurations\n\nAll architectures conform strictly to high-performance, responsive code standards.`;
-    }
-
-    if (text.includes('hire') || text.includes('available') || text.includes('work') || text.includes('job') || text.includes('freelance') || text.includes('opportunity')) {
-      return `AVAILABILITY_STATUS: OPEN [ACTIVE_ACQUISITION]\n\nJamshaid is currently accepting freelance contracts, collaboration briefs, and long-term full-stack engineering roles.\n\nLocation: ${photographerInfo.location}\nEmail: ${photographerInfo.email}\nPhone: ${photographerInfo.phone}`;
-    }
-
-    if (text.includes('contact') || text.includes('email') || text.includes('phone') || text.includes('linkedin') || text.includes('social')) {
-      return `COMMUNICATION_SHELL_CHANNELS:\n\n- EMAIL: ${photographerInfo.email}\n- PHONE: ${photographerInfo.phone}\n- LINKEDIN: ${photographerInfo.socialLinks.linkedin}\n\nFeel free to transmit a ping or schedule a diagnostic sync directly!`;
-    }
-
-    if (text.includes('education') || text.includes('university') || text.includes('college') || text.includes('bscs') || text.includes('abasyn')) {
-      return `ACADEMIC_CREDENTIALS:\n\n- DEGREE: Bachelor of Science in Computer Science (BSCS)\n- INSTITUTION: Abasyn University, Islamabad\n- YEAR: 2023 - 2027 (Expected)`;
-    }
-
-    if (text.includes('experience') || text.includes('work') || text.includes('asian') || text.includes('job')) {
-      return `PROFESSIONAL_TIMELINE:\n\n- FRONT-END DEVELOPER @ ASIAN IT (2024 – Present)\n  * Architected pixel-perfect frontends for diverse client websites.\n  * Integrated low-overhead REST APIs for high-throughput state syncing.\n  * Configured build code-splitting to maintain Lighthouse scores of 95+.`;
-    }
-
-    if (text.includes('hello') || text.includes('hi') || text.includes('greetings') || text.includes('hey')) {
-      return `GREETINGS, HUMAN VOYAGER.\n\nI am ready to process questions about Jamshaid's technical blueprints. What system query shall we run first?`;
-    }
-
-    return `CORE LOG: UNRECOGNIZED_QUERY.\n\nI could not map that into my pre-loaded database. However, you can ask about: "tech stack", "Hostelmate project", "Readability Pro project", "availability", or "academic history".\n\nOr contact Jamshaid directly at: ${photographerInfo.email}`;
-  };
-
-  const handleSendMessage = (text: string) => {
-    if (!text.trim()) return;
-
-    // Immediately stop any currently active speech when user initiates a new query
+  const reset = () => {
+    abortRef.current?.abort();
+    abortRef.current = null;
     stopVoice();
-    setIsSpeaking(false);
-
-    const userMsg: Message = {
-      id: Math.random().toString(),
-      sender: 'user',
-      text: text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInputValue('');
-    setIsTyping(true);
-
-    // Simulate holographic projection latency
-    setTimeout(() => {
-      const responseText = generateAIResponse(text);
-      const aiMsg: Message = {
-        id: Math.random().toString(),
-        sender: 'ai',
-        text: responseText,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages((prev) => [...prev, aiMsg]);
-      setIsTyping(false);
-      
-      // Speak response
-      speakText(responseText);
-    }, 900);
+    setSpeaking(false);
+    setBusy(false);
+    setMessages([welcomeMsg()]);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSendMessage(inputValue);
+  /* voice input */
+  const toggleMic = () => {
+    const Rec = getRecognition();
+    if (!Rec) return;
+    if (listening) {
+      recRef.current?.stop();
+      return;
+    }
+    stopVoice();
+    const rec = new Rec();
+    rec.lang = /^ur/i.test(navigator.language) ? 'ur-PK' : 'en-US';
+    rec.interimResults = true;
+    rec.continuous = false;
+    let finalText = '';
+    rec.onresult = (e) => {
+      let interim = '';
+      finalText = '';
+      for (let i = 0; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      setInput((finalText + interim).trim());
+    };
+    rec.onend = () => {
+      setListening(false);
+      recRef.current = null;
+      if (finalText.trim()) send(finalText);
+    };
+    rec.onerror = () => setListening(false);
+    recRef.current = rec;
+    setListening(true);
+    try {
+      rec.start();
+    } catch {
+      setListening(false);
     }
   };
+
+  /* action buttons */
+  const runAction = (a: AssistantAction) => {
+    if (a.href.endsWith('.pdf')) {
+      const link = document.createElement('a');
+      link.href = a.href;
+      link.download = 'Jamshaid_Ghafoor_Resume.pdf';
+      link.click();
+    } else if (a.href.startsWith('/')) {
+      navigate(a.href);
+      if (window.matchMedia('(max-width: 639px)').matches) setOpen(false);
+    } else if (a.href.startsWith('mailto:')) {
+      window.location.href = a.href;
+    } else {
+      window.open(a.href, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const onlyWelcome = messages.length === 1;
+  const last = messages[messages.length - 1];
+  const status = listening ? 'Listening…' : busy ? 'Thinking…' : speaking ? 'Speaking' : 'Online · ask me anything';
 
   return (
     <>
-      {/* Floating Hologram Orb Trigger Button */}
-      <div className="fixed bottom-6 right-6 z-50">
+      {/* Launcher */}
+      <div className={cn('fixed bottom-5 right-5 z-40 flex items-end gap-3', open && 'pointer-events-none opacity-0 sm:pointer-events-auto sm:opacity-100')}>
+        <AnimatePresence>
+          {nudge && !open && (
+            <motion.button
+              initial={{ opacity: 0, y: 10, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.9 }}
+              onClick={() => setOpen(true)}
+              className="mb-2 hidden max-w-[230px] rounded-2xl rounded-br-md border border-foreground/10 bg-background px-4 py-3 text-left text-sm text-foreground shadow-xl sm:block"
+            >
+              <span className="font-semibold">Got questions?</span>
+              <span className="block text-muted-foreground">Ask my AI about my work — it talks back.</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
         <motion.button
-          onClick={() => setIsOpen(!isOpen)}
-          className="relative w-14 h-14 rounded-full bg-zinc-950 border border-emerald-500/40 hover:border-emerald-400 flex items-center justify-center text-emerald-400 cursor-pointer shadow-[0_0_30px_rgba(16,185,129,0.25)] group focus:outline-none"
-          whileHover={{ scale: 1.05 }}
+          onClick={() => setOpen((o) => !o)}
+          whileHover={reduce ? undefined : { scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          className="relative flex h-14 items-center gap-2.5 rounded-full bg-foreground p-1.5 text-background shadow-[0_15px_40px_-10px_rgba(16,185,129,0.6)] sm:pr-5"
+          aria-label={open ? 'Close assistant' : 'Open AI assistant'}
+          aria-expanded={open}
+          aria-controls="ai-assistant"
           id="ai-avatar-trigger"
         >
-          {/* Holographic glowing orbits */}
-          <div className="absolute inset-0 rounded-full border border-emerald-500/20 animate-[spin_8s_linear_infinite]" />
-          <div className="absolute -inset-1.5 rounded-full border border-dashed border-emerald-500/10 animate-[spin_12s_linear_infinite_reverse]" />
-          <div className="absolute inset-0.5 rounded-full bg-gradient-to-tr from-emerald-500/0 to-emerald-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-          {isOpen ? (
-            <X size={20} className="relative z-10 transition-transform duration-300 group-hover:rotate-90" />
-          ) : (
-            <Bot size={22} className="relative z-10 animate-[pulse_2s_infinite]" />
-          )}
-
-          {/* Active status beacon */}
-          <span className="absolute top-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-zinc-950 rounded-full animate-ping pointer-events-none" />
-          <span className="absolute top-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-zinc-950 rounded-full pointer-events-none" />
+          {!open && !reduce && <span className="absolute inset-0 -z-10 rounded-full bg-emerald-500/40 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]" />}
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-cyan-400 text-black">
+            {open ? <X size={20} /> : <Sparkles size={20} />}
+          </span>
+          <span className="hidden text-sm font-semibold sm:inline">{open ? 'Close' : 'Ask my AI'}</span>
         </motion.button>
       </div>
 
-      {/* Hologram Panel Interface Drawer */}
+      {/* Panel */}
       <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92, y: 30 }}
-            transition={{ type: "spring", stiffness: 350, damping: 28 }}
-            className="fixed bottom-24 right-6 w-[92vw] sm:w-[380px] h-[480px] bg-zinc-950/95 backdrop-blur-xl border border-emerald-500/20 rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.7)] flex flex-col z-[99998] overflow-hidden"
-            id="ai-avatar-panel"
+        {open && (
+          <motion.section
+            id="ai-assistant"
+            role="dialog"
+            aria-label={`${ASSISTANT_NAME} chat`}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.96 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 z-[70] flex origin-bottom-right flex-col overflow-hidden bg-background sm:inset-auto sm:bottom-24 sm:right-5 sm:h-[min(660px,calc(100svh-8rem))] sm:w-[400px] sm:rounded-[28px] sm:border sm:border-foreground/10 sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)]"
           >
-            {/* Corner Tech Lines */}
-            <div className="absolute top-0 left-0 w-2 h-[1px] bg-emerald-500/40" />
-            <div className="absolute top-0 left-0 w-[1px] h-2 bg-emerald-500/40" />
-            <div className="absolute top-0 right-0 w-2 h-[1px] bg-emerald-500/40" />
-            <div className="absolute top-0 right-0 w-[1px] h-2 bg-emerald-500/40" />
-            <div className="absolute bottom-0 left-0 w-2 h-[1px] bg-emerald-500/40" />
-            <div className="absolute bottom-0 left-0 w-[1px] h-2 bg-emerald-500/40" />
-            <div className="absolute bottom-0 right-0 w-2 h-[1px] bg-emerald-500/40" />
-            <div className="absolute bottom-0 right-0 w-[1px] h-2 bg-emerald-500/40" />
-
-            {/* Glowing gradient atmosphere header */}
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
-
-            {/* Header section */}
-            <div className="p-4 border-b border-emerald-500/10 flex items-center justify-between bg-zinc-950/80">
-              <div className="flex items-center gap-2.5">
-                <div className="relative w-8 h-8 rounded-full bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  <Bot size={15} />
-                  <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-400 rounded-full border border-zinc-950 animate-pulse" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-mono font-medium tracking-widest text-white uppercase flex items-center gap-1.5">
-                    JG_ASSISTANT_COGNITIVE_V4
-                  </h3>
-                  <p className="text-[8px] font-mono tracking-wider text-emerald-500/60 uppercase">
-                    // status: online (secure_node_3000)
-                  </p>
+            {/* Header */}
+            <header className="relative flex items-center gap-3 border-b border-foreground/10 px-4 py-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
+              <div className="pointer-events-none absolute -left-10 -top-16 h-40 w-40 rounded-full bg-[radial-gradient(closest-side,rgba(16,185,129,0.25),transparent)]" />
+              <Avatar />
+              <div className="relative min-w-0 flex-1">
+                <div className="truncate text-[15px] font-semibold tracking-[-0.01em] text-foreground">{ASSISTANT_NAME}</div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  {speaking ? <SpeakingBars /> : <span className={cn('h-1.5 w-1.5 rounded-full', busy || listening ? 'bg-amber-400' : 'bg-emerald-500')} />}
+                  {status}
                 </div>
               </div>
+              <button
+                onClick={() => setMuted((m) => !m)}
+                className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                aria-label={muted ? 'Turn voice on' : 'Turn voice off'}
+                aria-pressed={!muted}
+                title={muted ? 'Voice off' : 'Voice on'}
+              >
+                {muted ? <VolumeX size={17} /> : <Volume2 size={17} />}
+              </button>
+              <button onClick={reset} className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground" aria-label="New conversation" title="New conversation">
+                <RotateCcw size={16} />
+              </button>
+              <button onClick={() => setOpen(false)} className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground" aria-label="Close assistant">
+                <X size={18} />
+              </button>
+            </header>
 
-              <div className="flex items-center gap-2">
-                {/* Visual Speaking Frequency Waves */}
-                {isSpeaking && !isMuted && (
-                  <div className="flex items-center gap-0.5 h-3.5 px-1 select-none" title="Assistant is speaking">
-                    <span className="w-0.5 h-2 bg-emerald-400 animate-[bounce_0.8s_infinite_100ms] rounded-full" />
-                    <span className="w-0.5 h-3 bg-emerald-400 animate-[bounce_0.8s_infinite_300ms] rounded-full" />
-                    <span className="w-0.5 h-1.5 bg-emerald-400 animate-[bounce_0.8s_infinite_200ms] rounded-full" />
-                  </div>
-                )}
-                
-                {/* Voice Toggle Button */}
-                <button
-                  onClick={() => setIsMuted(!isMuted)}
-                  className={`p-1.5 rounded-sm border transition-all cursor-pointer ${
-                    isMuted 
-                      ? 'border-transparent text-zinc-500 hover:text-zinc-300' 
-                      : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:text-emerald-300 hover:border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
-                  }`}
-                  title={isMuted ? "Unmute assistant voice" : "Mute assistant voice"}
+            {/* Messages */}
+            <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-5" aria-live="polite" aria-busy={busy}>
+              {messages.map((m) => (
+                <motion.div
+                  key={m.id}
+                  initial={reduce ? false : { opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className={cn('flex gap-2.5', m.role === 'user' && 'justify-end')}
                 >
-                  {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                </button>
-
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="text-zinc-500 hover:text-white transition-colors p-1.5 hover:bg-white/5 rounded-sm cursor-pointer"
-                  title="Close panel"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-
-            {/* Terminal voice pulse analyzer */}
-            <VoicePulseAnalyzer isSpeaking={isSpeaking && !isMuted} />
-
-            {/* System Monitor widget */}
-            <SystemMonitor />
-
-            {/* Messages body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 font-mono scrollbar-thin scrollbar-thumb-emerald-950/40 scrollbar-track-transparent">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-                >
-                  <div className="flex items-center gap-1 text-[8px] text-zinc-500 uppercase tracking-widest mb-1 select-none">
-                    <span>{msg.sender === 'user' ? 'TRANSMITTING_NODE' : 'COGNITIVE_RESONANCE'}</span>
-                    <span>•</span>
-                    <span>{msg.timestamp}</span>
+                  {m.role === 'assistant' && <Avatar size={28} />}
+                  <div className={cn('max-w-[84%]', m.role === 'user' && 'flex flex-col items-end')}>
+                    <div
+                      className={cn(
+                        'rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed [overflow-wrap:anywhere]',
+                        m.role === 'user' ? 'rounded-tr-md bg-emerald-500 text-black' : 'rounded-tl-md bg-secondary text-foreground'
+                      )}
+                    >
+                      {m.text ? <RichText text={m.text} /> : <TypingDots />}
+                    </div>
+                    {!!m.actions?.length && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {m.actions.map((a) => (
+                          <button
+                            key={a.href + a.label}
+                            onClick={() => runAction(a)}
+                            className="group inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-1.5 text-[13px] font-medium text-emerald-700 transition-colors hover:bg-emerald-500 hover:text-black dark:text-emerald-300"
+                          >
+                            {a.label}
+                            <ArrowUp size={13} className="rotate-45 transition-transform group-hover:rotate-90" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-
-                  <div
-                    className={`max-w-[85%] rounded-sm px-3.5 py-2.5 text-xs font-light leading-relaxed whitespace-pre-wrap select-text ${
-                      msg.sender === 'user'
-                        ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
-                        : 'bg-zinc-900/60 border border-white/5 text-zinc-300'
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
-                </div>
+                </motion.div>
               ))}
 
-              {/* Typing indicator */}
-              {isTyping && (
-                <div className="flex flex-col items-start">
-                  <div className="flex items-center gap-1 text-[8px] text-zinc-500 uppercase tracking-widest mb-1 select-none">
-                    <span>COGNITIVE_RESONANCE</span>
-                    <span>•</span>
-                    <span className="animate-pulse">THINKING_PROCS...</span>
-                  </div>
-                  <div className="bg-zinc-900/60 border border-white/5 rounded-sm px-4 py-2.5 text-xs flex items-center gap-1.5 text-emerald-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
+              {onlyWelcome && (
+                <div className="grid gap-2 pl-[38px]">
+                  {STARTER_PROMPTS.map((p, i) => (
+                    <motion.button
+                      key={p}
+                      initial={reduce ? false : { opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.15 + i * 0.06 }}
+                      onClick={() => send(p)}
+                      className="rounded-2xl border border-foreground/10 px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:border-emerald-500 hover:bg-emerald-500/5"
+                    >
+                      {p}
+                    </motion.button>
+                  ))}
                 </div>
               )}
-              <div ref={messagesEndRef} />
+
+              {!busy && !onlyWelcome && last?.role === 'assistant' && !!last.suggestions?.length && (
+                <div className="flex flex-wrap gap-2 pl-[38px]">
+                  {last.suggestions.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => send(s)}
+                      className="rounded-full border border-foreground/15 px-3.5 py-1.5 text-[13px] text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Presets Grid */}
-            <div className="p-3 bg-zinc-950 border-t border-emerald-500/10 flex flex-col gap-1.5">
-              <span className="text-[8px] font-mono text-zinc-500 tracking-widest uppercase px-1">
-                // SYSTEM_QUICK_PRESETS
-              </span>
-              <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-1">
-                {PRESET_PROMPTS.map((prompt, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleSendMessage(prompt.text)}
-                    className="shrink-0 px-2.5 py-1 bg-zinc-900 hover:bg-emerald-500/5 hover:border-emerald-500/30 border border-white/5 text-[9px] font-mono text-zinc-400 hover:text-emerald-300 transition-all rounded-sm cursor-pointer whitespace-nowrap"
-                  >
-                    {prompt.text}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom Input controls */}
-            <div className="p-3 border-t border-emerald-500/10 bg-zinc-950/90 flex gap-2">
-              <input
-                type="text"
-                placeholder="Ask about my projects, stack, availability..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyPress}
-                className="flex-1 bg-zinc-900 border border-white/5 hover:border-white/10 focus:border-emerald-500/30 text-xs font-mono px-3.5 py-2.5 rounded-sm text-white focus:outline-none placeholder-zinc-600 tracking-wide"
-              />
-              <button
-                onClick={() => handleSendMessage(inputValue)}
-                className="w-10 h-10 rounded-sm border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 flex items-center justify-center cursor-pointer transition-colors"
+            {/* Composer */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                send(input);
+              }}
+              className="border-t border-foreground/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+            >
+              <div
+                className={cn(
+                  'flex items-center gap-2 rounded-full border bg-secondary/60 py-1.5 pl-4 pr-1.5 transition-colors',
+                  listening ? 'border-rose-500' : 'border-foreground/10 focus-within:border-emerald-500'
+                )}
               >
-                <Send size={14} />
-              </button>
-            </div>
-          </motion.div>
+                <input
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={listening ? 'Listening… speak now' : 'Ask about projects, skills, hiring…'}
+                  maxLength={600}
+                  className="min-w-0 flex-1 bg-transparent text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  aria-label="Message"
+                />
+                {micSupported && (
+                  <button
+                    type="button"
+                    onClick={toggleMic}
+                    className={cn(
+                      'grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors',
+                      listening ? 'animate-pulse bg-rose-500 text-white' : 'text-muted-foreground hover:bg-background hover:text-foreground'
+                    )}
+                    aria-label={listening ? 'Stop listening' : 'Ask with your voice'}
+                    title="Ask with your voice"
+                  >
+                    <Mic size={17} />
+                  </button>
+                )}
+                {busy ? (
+                  <button type="button" onClick={() => abortRef.current?.abort()} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-foreground text-background" aria-label="Stop">
+                    <Square size={13} fill="currentColor" />
+                  </button>
+                ) : (
+                  <button type="submit" disabled={!input.trim()} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-500 text-black transition-opacity disabled:opacity-40" aria-label="Send">
+                    <ArrowUp size={17} />
+                  </button>
+                )}
+              </div>
+              <p className="mt-2 text-center text-[11px] text-muted-foreground">Answers are based on Jamshaid's portfolio · AI can make mistakes</p>
+            </form>
+          </motion.section>
         )}
       </AnimatePresence>
     </>
