@@ -4,24 +4,45 @@ import path from 'path';
 import {defineConfig, loadEnv, type Plugin} from 'vite';
 
 /**
- * Dev-only: serve the Vercel function at /api/tts so the cloned voice works
- * with `npm run dev` too (reads ELEVENLABS_* from .env.local).
+ * Dev-only: serve the Vercel functions in /api (tts, chat) with `npm run dev`
+ * too, streaming responses through. Reads ELEVENLABS_* / GEMINI_* from .env.local.
  */
 function devApi(): Plugin {
   return {
-    name: 'dev-api-tts',
+    name: 'dev-api',
     configureServer(server) {
-      server.middlewares.use('/api/tts', async (req, res) => {
+      server.middlewares.use(async (req, res, next) => {
+        const m = req.url?.match(/^\/api\/([a-z]+)(?:\?|$)/);
+        if (!m) return next();
         try {
-          const mod = await server.ssrLoadModule('/api/tts.ts');
-          const r: Response = await mod.GET(
-            new Request(`http://${req.headers.host}${req.originalUrl}`, {
-              headers: req.headers.referer ? { referer: req.headers.referer } : {},
+          const mod = await server.ssrLoadModule(`/api/${m[1]}.ts`);
+          const handler = mod[req.method ?? 'GET'];
+          if (typeof handler !== 'function') {
+            res.statusCode = 405;
+            return res.end();
+          }
+          const chunks: Buffer[] = [];
+          for await (const c of req) chunks.push(c as Buffer);
+          const headers: Record<string, string> = {};
+          for (const [k, v] of Object.entries(req.headers)) if (typeof v === 'string') headers[k] = v;
+          const r: Response = await handler(
+            new Request(`http://${req.headers.host}${req.url}`, {
+              method: req.method,
+              headers,
+              body: chunks.length ? Buffer.concat(chunks) : undefined,
             })
           );
           res.statusCode = r.status;
           r.headers.forEach((v, k) => res.setHeader(k, v));
-          res.end(Buffer.from(await r.arrayBuffer()));
+          if (r.body) {
+            const reader = r.body.getReader();
+            for (;;) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              res.write(value);
+            }
+          }
+          res.end();
         } catch (e) {
           res.statusCode = 500;
           res.end(String(e));
@@ -32,7 +53,7 @@ function devApi(): Plugin {
 }
 
 export default defineConfig(({mode}) => {
-  const env = loadEnv(mode, process.cwd(), 'ELEVENLABS_');
+  const env = loadEnv(mode, process.cwd(), ['ELEVENLABS_', 'GEMINI_']);
   Object.assign(process.env, env);
   return {
     plugins: [react(), tailwindcss(), devApi()],
