@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
-import { useScrollPosition } from '../../hooks/useScrollPosition';
+import { useScrolledPast } from '../../hooks/useScrollPosition';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '../../lib/utils';
 import { useTheme } from '../providers/ThemeProvider';
@@ -42,14 +42,14 @@ function HamburgerIcon({ isOpen, isTransparent, isLight }: { isOpen: boolean; is
 export function Header() {
   const { theme } = useTheme();
   const isLight = theme === 'light';
-  const scrollY = useScrollPosition();
+  const scrolled = useScrolledPast(50);
   const location = useLocation();
   const shouldReduceMotion = useReducedMotion();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isHomePage = location.pathname === '/';
   // Transparent state only on Home page when NOT scrolled (scrollY < 50)
-  const isTransparent = isHomePage && scrollY < 50;
+  const isTransparent = isHomePage && !scrolled;
 
   // Sync mobile drawer open state with body scroll lock
   useEffect(() => {
@@ -96,7 +96,7 @@ export function Header() {
           "fixed top-0 inset-x-0 h-16 z-50 flex items-center transition-all duration-500",
           isTransparent 
             ? (isLight ? "bg-transparent text-zinc-900 border-b border-transparent" : "bg-transparent text-white border-b border-transparent") 
-            : "bg-white/95 dark:bg-zinc-950/95 backdrop-blur-lg border-b border-zinc-200 dark:border-zinc-800/80 shadow-sm text-zinc-900 dark:text-white"
+            : "bg-white/95 dark:bg-zinc-950/95 border-b border-zinc-200 dark:border-zinc-800/80 shadow-sm text-zinc-900 dark:text-white"
         )}
       >
         <div className="w-full max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between">

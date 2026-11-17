@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useReducedMotion, useScroll, useSpring, useTransform, MotionValue } from 'motion/react';
+import { motion, useReducedMotion, useScroll, useTransform, MotionValue } from 'motion/react';
 import { ArrowRight, ArrowUpRight, Code2, Download, Github, MousePointerClick, Terminal } from 'lucide-react';
 import { photographerInfo } from '../data/photographer';
 import { projects } from '../data/projects';
@@ -16,6 +16,19 @@ import { CountUp, RevealWords, ScrambleText, VelocityMarquee } from '../componen
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 /* ============================== HERO ============================== */
+function LiveClock() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const tick = () => {
+      if (ref.current) ref.current.textContent = `${new Date().toLocaleTimeString([], { hour12: false })} PKT`;
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  return <div ref={ref} className="tabular-nums" />;
+}
+
 function Hero() {
   const reduce = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
@@ -23,13 +36,7 @@ function Hero() {
   const y = useTransform(scrollYProgress, [0, 1], ['0%', '35%']);
   const scale = useTransform(scrollYProgress, [0, 1], [1, 0.82]);
   const opacity = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
-  const blur = useTransform(scrollYProgress, [0, 1], ['blur(0px)', 'blur(12px)']);
 
-  const [time, setTime] = useState(() => new Date());
-  useEffect(() => {
-    const id = window.setInterval(() => setTime(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
 
   // Pointer spotlight via CSS vars (no React re-render)
   const onMove = (e: React.PointerEvent<HTMLElement>) => {
@@ -81,7 +88,7 @@ function Hero() {
         <div className="mt-1">{photographerInfo.location}</div>
       </div>
       <div className="absolute top-24 right-4 sm:right-8 font-mono text-[10px] tracking-[0.3em] text-muted-foreground/70 uppercase text-right hidden sm:block">
-        <div className="tabular-nums">{time.toLocaleTimeString([], { hour12: false })} PKT</div>
+        <LiveClock />
         <div className="mt-1 flex items-center justify-end gap-2">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -92,7 +99,7 @@ function Hero() {
       </div>
 
       <motion.div
-        style={reduce ? undefined : { y, scale, opacity, filter: blur }}
+        style={reduce ? undefined : { y, scale, opacity }}
         className="relative z-10 flex flex-col items-center text-center px-4 w-full max-w-7xl"
       >
         <motion.div
@@ -342,8 +349,7 @@ function HorizontalWork() {
   }, []);
 
   const { scrollYProgress } = useScroll({ target: targetRef, offset: ['start start', 'end end'] });
-  const rawX = useTransform(scrollYProgress, [0, 1], [0, -distance]);
-  const x = useSpring(rawX, { stiffness: 120, damping: 30, mass: 0.4 });
+  const x = useTransform(scrollYProgress, [0, 1], [0, -distance]);
   const bar = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
 
   const header = (

@@ -86,7 +86,7 @@ export function ProjectCard({
         transform: shouldReduceMotion ? 'none' : transform,
       }}
       className={cn(
-        "w-full transition-[box-shadow,border-color,scale] duration-500 rounded-sm relative group overflow-hidden bg-zinc-950/40 backdrop-blur-md border border-white/10",
+        "w-full transition-[box-shadow,border-color,scale] duration-500 rounded-sm relative group overflow-hidden bg-zinc-950 border border-white/10",
         isHovered ? "shadow-[0_25px_60px_rgba(16,185,129,0.18)] border-emerald-500/40 z-10 scale-[1.01]" : "shadow-md"
       )}
       data-cursor="view"

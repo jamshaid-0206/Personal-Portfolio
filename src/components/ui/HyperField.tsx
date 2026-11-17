@@ -31,7 +31,7 @@ export function HyperField({ className = '' }: { className?: string }) {
     if (!ctx) return;
 
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
     let w = 0;
     let h = 0;
     let parts: P[] = [];
@@ -48,7 +48,7 @@ export function HyperField({ className = '' }: { className?: string }) {
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const count = Math.min(150, Math.floor((w * h) / 9000));
+      const count = Math.min(w < 768 ? 45 : 95, Math.floor((w * h) / 12000));
       parts = Array.from({ length: count }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
@@ -102,24 +102,34 @@ export function HyperField({ className = '' }: { className?: string }) {
         if (p.y > h + 20) p.y = -20;
       }
 
-      // Links
-      ctx.lineWidth = 1;
+      // Links — bucketed by alpha so the whole network is drawn in a few stroke() calls
+      const buckets: number[][] = [[], [], [], []];
       for (let i = 0; i < parts.length; i++) {
         const a = parts[i];
         for (let j = i + 1; j < parts.length; j++) {
           const b = parts[j];
           const dx = a.x - b.x;
+          if (dx > LINK || dx < -LINK) continue;
           const dy = a.y - b.y;
+          if (dy > LINK || dy < -LINK) continue;
           const d2 = dx * dx + dy * dy;
           if (d2 < LINK2) {
-            const o = (1 - d2 / LINK2) * 0.35 * Math.min(a.z, b.z);
-            ctx.strokeStyle = `hsla(${a.hue},85%,60%,${o})`;
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.stroke();
+            const o = (1 - d2 / LINK2) * Math.min(a.z, b.z);
+            buckets[Math.min(3, (o * 4) | 0)].push(a.x, a.y, b.x, b.y);
           }
         }
+      }
+      ctx.lineWidth = 1;
+      for (let k = 0; k < 4; k++) {
+        const seg = buckets[k];
+        if (!seg.length) continue;
+        ctx.strokeStyle = `rgba(52,211,153,${((k + 0.5) / 4) * 0.35})`;
+        ctx.beginPath();
+        for (let n = 0; n < seg.length; n += 4) {
+          ctx.moveTo(seg[n], seg[n + 1]);
+          ctx.lineTo(seg[n + 2], seg[n + 3]);
+        }
+        ctx.stroke();
       }
 
       // Pointer links

@@ -1,18 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-export function useScrollPosition() {
-  const [scrollPos, setScrollPos] = useState(0);
+/**
+ * Returns true once the page is scrolled past `threshold` px.
+ * Only updates state when the boolean flips, so scrolling never re-renders consumers.
+ */
+export function useScrolledPast(threshold = 50) {
+  const [past, setPast] = useState(() => typeof window !== 'undefined' && window.scrollY > threshold);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrollPos(window.scrollY);
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const next = window.scrollY > threshold;
+        setPast((prev) => (prev === next ? prev : next));
+      });
     };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [threshold]);
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  return scrollPos;
+  return past;
 }

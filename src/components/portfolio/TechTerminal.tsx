@@ -124,7 +124,7 @@ export function TechTerminal() {
       </div>
 
       {/* Terminal Content Body */}
-      <div data-lenis-prevent className="p-4 md:p-6 space-y-4 min-h-[320px] max-h-[480px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 select-all">
+      <div className="p-4 md:p-6 space-y-4 min-h-[320px] max-h-[480px] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800 select-all">
         {displayedLines.map((line, idx) => (
           <div key={idx} className="space-y-1">
             {line.type === 'input' ? (
