@@ -65,7 +65,17 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   if (!upstream.ok || !upstream.body) {
-    console.error('ElevenLabs TTS failed with status', upstream.status);
+    // Log ElevenLabs' own reason (e.g. paid_plan_required, quota_exceeded,
+    // invalid_api_key, voice_not_found) so it shows up in Vercel's function logs.
+    let reason = '';
+    try {
+      const body = await upstream.json();
+      const d = body?.detail;
+      reason = typeof d === 'string' ? d : [d?.status, d?.message].filter(Boolean).join(' — ');
+    } catch {
+      /* body was not JSON */
+    }
+    console.error(`ElevenLabs TTS failed with status ${upstream.status}${reason ? `: ${reason}` : ''}`);
     return error(502, 'Voice generation failed.');
   }
 

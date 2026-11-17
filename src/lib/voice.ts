@@ -31,8 +31,9 @@ export async function speakWithClonedVoice(
       const res = await fetch(`/api/tts?text=${encodeURIComponent(text)}`);
       const type = res.headers.get('content-type') || '';
       if (!res.ok || !type.includes('audio')) {
-        // Not deployed / not configured → stop trying for this session.
-        if (res.status === 503 || res.status === 404 || !type.includes('audio')) remoteUnavailable = true;
+        // Not deployed, not configured or rejected upstream (plan/quota) →
+        // use browser speech for the rest of this visit instead of retrying.
+        remoteUnavailable = true;
         return false;
       }
       src = URL.createObjectURL(await res.blob());
