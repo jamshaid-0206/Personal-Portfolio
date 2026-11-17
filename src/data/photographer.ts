@@ -20,6 +20,7 @@ export const photographerInfo: PhotographerInfo = {
     "Express.js",
     "MongoDB",
     "Firebase",
+    "WordPress / WooCommerce",
     "Redux",
     "REST APIs",
     "HTML5 / CSS3",

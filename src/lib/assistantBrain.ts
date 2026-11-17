@@ -61,9 +61,11 @@ const SHORT_NAME: Record<string, string> = {
   hostelmate: 'Hostelmate',
   'asian-it-client-platforms': 'Client Platforms',
   'mern-api-platform': 'Trading Engine',
+  'aesthetic-med-pakistan': 'Aesthetic Med',
 };
 
 const PROJECT_KEYS: Record<string, string[]> = {
+  'aesthetic-med-pakistan': ['aesthetic', 'aestheticmed', 'aesthetic med', 'aestheticmedpak', 'wordpress', 'woocommerce', 'elementor', 'skincare', 'skin care', 'ecommerce', 'e-commerce', 'online store', 'store', 'shop'],
   'readability-pro': ['readability', 'readabilitypro', 'writing', 'grammar', 'nlp', 'ai writing'],
   hostelmate: ['hostelmate', 'hostel', 'react native app', 'mobile app', 'accommodation'],
   'asian-it-client-platforms': ['client web', 'client platforms', 'asian it websites', 'client websites', 'websites', 'web platforms'],
@@ -105,7 +107,8 @@ function describeProject(p: Project, ur: boolean): BrainReply {
     ? `**${p.title}** (${p.year}) — ${what}\n\n- Stack: ${p.camera}\n- Natija: ${outcome}`
     : `**${p.title}** (${p.year}) — ${what}\n\n- Stack: ${p.camera}\n- Result: ${outcome}`;
   const actions = [projectAction(p)];
-  if (GITHUB_REPOS[p.slug]) actions.push({ label: 'View code', href: GITHUB_REPOS[p.slug] });
+  if (p.liveUrl) actions.push({ label: 'Visit live site', href: p.liveUrl });
+  else if (GITHUB_REPOS[p.slug]) actions.push({ label: 'View code', href: GITHUB_REPOS[p.slug] });
   return { text, actions };
 }
 
@@ -154,8 +157,8 @@ export function localReply(input: string): BrainReply {
     case 'skills':
       return {
         text: say(
-          `His core stack:\n- **Frontend:** React, React Native, Redux, Tailwind, HTML5/CSS3\n- **Backend:** Node.js, Express, REST APIs, MVC\n- **Data:** MongoDB, Firebase\n- **Tooling:** Git/GitHub, TypeScript, performance optimisation`,
-          `Un ka main stack:\n- **Frontend:** React, React Native, Redux, Tailwind\n- **Backend:** Node.js, Express, REST APIs\n- **Data:** MongoDB, Firebase\n- **Tools:** Git/GitHub, TypeScript`
+          `His core stack:\n- **Frontend:** React, React Native, Redux, Tailwind, HTML5/CSS3\n- **Backend:** Node.js, Express, REST APIs, MVC\n- **Data:** MongoDB, Firebase\n- **CMS & e-commerce:** WordPress, WooCommerce, Elementor Pro\n- **Tooling:** Git/GitHub, TypeScript, performance optimisation`,
+          `Un ka main stack:\n- **Frontend:** React, React Native, Redux, Tailwind\n- **Backend:** Node.js, Express, REST APIs\n- **Data:** MongoDB, Firebase\n- **CMS:** WordPress, WooCommerce, Elementor\n- **Tools:** Git/GitHub, TypeScript`
         ),
         actions: [{ label: 'About him', href: '/about' }],
       };
@@ -256,7 +259,8 @@ export function parseActions(raw: string): BrainReply {
   const actions: AssistantAction[] = [];
   const text = raw
     .replace(/\[\[([^\]|]{1,40})\|([^\]\s]{1,200})\]\]/g, (_, label: string, href: string) => {
-      if (/^(\/|mailto:|https:\/\/github\.com\/jamshaid-0206)/.test(href) && actions.length < 2) actions.push({ label: label.trim(), href });
+      const external = /^https:\/\/github\.com\/jamshaid-0206/.test(href) || projects.some((p) => p.liveUrl && href.startsWith(p.liveUrl));
+      if ((/^(\/|mailto:)/.test(href) || external) && actions.length < 2) actions.push({ label: label.trim(), href });
       return '';
     })
     .replace(/\n{3,}/g, '\n\n')

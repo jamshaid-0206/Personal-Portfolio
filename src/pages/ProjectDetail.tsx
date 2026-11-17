@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
-import { ArrowLeft, ArrowUpRight, Github, Maximize2 } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Github, Globe, Maximize2 } from 'lucide-react';
 import { projects } from '../data/projects';
 import { Lightbox } from '../components/portfolio/Lightbox';
 import { ProjectDemoVideo } from '../components/portfolio/ProjectDemoVideo';
@@ -17,6 +17,11 @@ const GITHUB: Record<string, string> = {
 };
 
 const STATS: Record<string, { label: string; value: string }[]> = {
+  'aesthetic-med-pakistan': [
+    { label: 'Products live', value: '27' },
+    { label: 'Product categories', value: '22' },
+    { label: 'Brands carried', value: '6' },
+  ],
   'readability-pro': [
     { label: 'AI response latency', value: '<240ms' },
     { label: 'Grammar recall accuracy', value: '98.6%' },
@@ -37,6 +42,14 @@ const STATS: Record<string, { label: string; value: string }[]> = {
     { label: 'Peak throughput', value: '25k/s' },
     { label: 'CPU overhead', value: '<4.5%' },
   ],
+};
+
+const CATEGORY_LABEL: Record<string, string> = {
+  ai: 'AI',
+  mobile: 'Mobile',
+  frontend: 'Frontend',
+  fullstack: 'Full-stack',
+  wordpress: 'WordPress',
 };
 
 const PROCESS = ['Planning', 'Design', 'Development', 'Testing', 'Launch'];
@@ -90,7 +103,7 @@ export default function ProjectDetail() {
   const meta = [
     { label: 'Client', value: project.client },
     { label: 'Year', value: project.year },
-    { label: 'Category', value: project.category },
+    { label: 'Category', value: CATEGORY_LABEL[project.category] ?? project.category },
     { label: 'Location', value: project.location.split('/')[0].trim() },
   ];
 
@@ -119,7 +132,7 @@ export default function ProjectDetail() {
           {meta.map((m) => (
             <div key={m.label} className="pr-4">
               <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{m.label}</div>
-              <div className="mt-2 text-lg font-medium capitalize text-foreground">{m.value}</div>
+              <div className="mt-2 text-lg font-medium text-foreground">{m.value}</div>
             </div>
           ))}
         </InView>
@@ -131,10 +144,25 @@ export default function ProjectDetail() {
               </span>
             ))}
           </div>
-          <a href={GITHUB[project.slug] ?? 'https://github.com/jamshaid-0206'} target="_blank" rel="noopener noreferrer" className={BTN_PRIMARY}>
-            <Github size={16} /> View source
-            <ArrowUpRight size={16} className="transition-transform duration-300 group-hover:rotate-45" />
-          </a>
+          <div className="flex flex-wrap gap-3">
+            {project.liveUrl && (
+              <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className={BTN_PRIMARY}>
+                <Globe size={16} /> Visit live site
+                <ArrowUpRight size={16} className="transition-transform duration-300 group-hover:rotate-45" />
+              </a>
+            )}
+            {(GITHUB[project.slug] || !project.liveUrl) && (
+              <a
+                href={GITHUB[project.slug] ?? 'https://github.com/jamshaid-0206'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={project.liveUrl ? BTN_GHOST : BTN_PRIMARY}
+              >
+                <Github size={16} /> View source
+                <ArrowUpRight size={16} className="transition-transform duration-300 group-hover:rotate-45" />
+              </a>
+            )}
+          </div>
         </InView>
       </section>
 
