@@ -1,588 +1,330 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Calendar, 
-  Layers, 
-  ShieldCheck, 
-  Github, 
-  ExternalLink,
-  Cpu, 
-  Lightbulb, 
-  TrendingUp, 
-  CheckCircle2, 
-  Compass, 
-  Hammer, 
-  Gauge, 
-  BookOpen,
-  Activity,
-  Zap,
-  BarChart3
-} from 'lucide-react';
-import { motion, useReducedMotion } from 'motion/react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, Navigate, useParams } from 'react-router-dom';
+import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
+import { ArrowLeft, ArrowUpRight, Github, Maximize2 } from 'lucide-react';
 import { projects } from '../data/projects';
 import { Lightbox } from '../components/portfolio/Lightbox';
-import { ProjectNavigation } from '../components/portfolio/ProjectNavigation';
-import { SEOHead } from '../components/seo/SEOHead';
-import { ScrollReveal } from '../components/ui/ScrollReveal';
-import { PageTransition } from '../components/ui/PageTransition';
-import { SkeletonImage } from '../components/ui/SkeletonImage';
 import { ProjectDemoVideo } from '../components/portfolio/ProjectDemoVideo';
-import { SystemTopology } from '../components/portfolio/SystemTopology';
-import { ProjectStats } from '../components/portfolio/ProjectStats';
+import { SEOHead } from '../components/seo/SEOHead';
+import { PageTransition } from '../components/ui/PageTransition';
+import { BTN_GHOST, BTN_PRIMARY, CONTAINER, EASE, Eyebrow, InView, PageHero } from '../components/ui/Premium';
 import { cn } from '../lib/utils';
+
+const GITHUB: Record<string, string> = {
+  'readability-pro': 'https://github.com/jamshaid-0206/ReadabilityPro-AI-Writing-Assistant',
+  'mern-api-platform': 'https://github.com/jamshaid-0206/binance-trading-bot',
+  hostelmate: 'https://github.com/jamshaid-0206/MAD',
+};
+
+const STATS: Record<string, { label: string; value: string }[]> = {
+  'readability-pro': [
+    { label: 'AI response latency', value: '<240ms' },
+    { label: 'Grammar recall accuracy', value: '98.6%' },
+    { label: 'Service uptime', value: '99.99%' },
+  ],
+  hostelmate: [
+    { label: 'Offline sync', value: '<1s' },
+    { label: 'Data recovery rate', value: '100%' },
+    { label: 'Crash-free sessions', value: '99.8%' },
+  ],
+  'asian-it-client-platforms': [
+    { label: 'Lighthouse score', value: '95+' },
+    { label: 'Bundle size', value: '-40%' },
+    { label: 'Site visits', value: '+185%' },
+  ],
+  'mern-api-platform': [
+    { label: 'WebSocket latency', value: '~12ms' },
+    { label: 'Peak throughput', value: '25k/s' },
+    { label: 'CPU overhead', value: '<4.5%' },
+  ],
+};
+
+const PROCESS = ['Planning', 'Design', 'Development', 'Testing', 'Launch'];
+
+function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <div className="mb-10 md:mb-14">
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <h2 className="text-[clamp(2.2rem,5vw,4.5rem)] font-semibold leading-[0.95] tracking-[-0.045em] text-foreground">{title}</h2>
+    </div>
+  );
+}
+
+function Cover({ src, alt }: { src: string; alt: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const scale = useTransform(scrollYProgress, [0, 1], [1.2, 1]);
+  return (
+    <div ref={ref} className="relative aspect-[4/3] overflow-hidden rounded-[28px] bg-gradient-to-br from-zinc-800 to-zinc-950 md:aspect-[16/8]">
+      <motion.img src={src} alt={alt} style={reduce ? undefined : { scale }} className="absolute inset-0 h-full w-full object-cover" loading="eager" decoding="async" />
+    </div>
+  );
+}
 
 export default function ProjectDetail() {
   const { slug } = useParams<{ slug: string }>();
-  const shouldReduceMotion = useReducedMotion();
+  const reduce = useReducedMotion();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const idx = projects.findIndex((p) => p.slug === slug);
+  const project = projects[idx];
 
-  // Retrieve current active project record
-  const project = projects.find((p) => p.slug === slug);
-
-  // Keyboard navigation for Lightbox modal
   useEffect(() => {
-    if (lightboxIndex === null) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        handlePrevImage();
-      } else if (e.key === 'ArrowRight') {
-        handleNextImage();
-      } else if (e.key === 'Escape') {
-        setLightboxIndex(null);
-      }
+    if (lightboxIndex === null || !project) return;
+    const n = project.images.length;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') setLightboxIndex((i) => (i === null ? i : (i - 1 + n) % n));
+      else if (e.key === 'ArrowRight') setLightboxIndex((i) => (i === null ? i : (i + 1) % n));
+      else if (e.key === 'Escape') setLightboxIndex(null);
     };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightboxIndex, project]);
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightboxIndex]);
+  if (!project) return <Navigate to="/404" replace />;
 
-  const getGithubUrl = (projectSlug: string) => {
-    switch (projectSlug) {
-      case 'readability-pro':
-        return 'https://github.com/jamshaid-0206/ReadabilityPro-AI-Writing-Assistant';
-      case 'mern-api-platform':
-        return 'https://github.com/jamshaid-0206/binance-trading-bot';
-      case 'hostelmate':
-        return 'https://github.com/jamshaid-0206/MAD';
-      default:
-        return 'https://github.com/jamshaid-0206';
-    }
-  };
+  const next = projects[(idx + 1) % projects.length];
+  const stats = STATS[project.slug] ?? STATS['asian-it-client-platforms'];
+  const n = project.images.length;
 
-  const getProjectStats = (projectSlug: string) => {
-    switch (projectSlug) {
-      case 'readability-pro':
-        return [
-          { label: "AI INFERENCE LATENCY", value: "<240ms", desc: "Avg LLM generation speed", icon: Zap },
-          { label: "RECALL ACCURACY", value: "98.6%", desc: "Grammar feedback correctness", icon: Activity },
-          { label: "SYSTEM UPTIME", value: "99.99%", desc: "Cloud proxy availability", icon: BarChart3 }
-        ];
-      case 'mern-api-platform':
-        return [
-          { label: "WEBSOCKET LATENCY", value: "~12ms", desc: "Real-time telemetry exchange", icon: Zap },
-          { label: "PEAK THROUGHPUT", value: "25k req/s", desc: "High concurrency threshold", icon: Activity },
-          { label: "CPU RUNTIME OVERHEAD", value: "<4.5%", desc: "Node microservices cluster", icon: BarChart3 }
-        ];
-      default:
-        return [
-          { label: "API DISPATCH SPEED", value: "<150ms", desc: "JSON payload transfer", icon: Zap },
-          { label: "USER RETENTION", value: "+185%", desc: "UX flow productivity gain", icon: Activity },
-          { label: "FIRST INPUT DELAY", value: "0.45s", desc: "Framer client-side load speed", icon: BarChart3 }
-        ];
-    }
-  };
-
-  if (!project) {
-    // If slug is invalid, route to Not Found handler
-    return <Navigate to="/404" replace />;
-  }
-
-  // Gallery Navigation Helper Functions
-  const handlePrevImage = () => {
-    if (lightboxIndex === null) return;
-    setLightboxIndex((prev) => 
-      prev === 0 ? project.images.length - 1 : (prev as number) - 1
-    );
-  };
-
-  const handleNextImage = () => {
-    if (lightboxIndex === null) return;
-    setLightboxIndex((prev) => 
-      prev === project.images.length - 1 ? 0 : (prev as number) + 1
-    );
-  };
-
-  // Parsing process steps
-  const processSteps = [
-    { title: "Planning", subtitle: "Architecture", icon: Compass, num: "01" },
-    { title: "Design", subtitle: "Layout & UI", icon: Layers, num: "02" },
-    { title: "Development", subtitle: "Full Stack", icon: Hammer, num: "03" },
-    { title: "Testing", subtitle: "Audits & QA", icon: Gauge, num: "04" },
-    { title: "Deployment", subtitle: "Cloud Launch", icon: CheckCircle2, num: "05" }
+  const meta = [
+    { label: 'Client', value: project.client },
+    { label: 'Year', value: project.year },
+    { label: 'Category', value: project.category },
+    { label: 'Location', value: project.location.split('/')[0].trim() },
   ];
 
   return (
     <PageTransition>
-      <SEOHead 
-        title={project.title} 
-        description={project.description} 
-        image={project.coverImage} 
-        slug={project.slug} 
+      <SEOHead title={project.title} description={project.description} image={project.coverImage} slug={project.slug} />
+
+      <PageHero
+        compact
+        size="md"
+        eyebrow={
+          <Link to="/portfolio" className="group inline-flex items-center gap-2 hover:text-foreground">
+            <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" /> All work
+          </Link>
+        }
+        lines={[project.title]}
+        intro={project.description.split('\n\n')[0]}
       />
 
-      {/* SECTION A: HERO HEADER FULL BLEED IMAGE BANNER */}
-      <section className="relative h-[65vh] w-full overflow-hidden bg-black select-none">
-        
-        {/* Full-bleed responsive background cover using SkeletonImage */}
-        <div className="absolute inset-0 w-full h-full">
-          <SkeletonImage
-            src={project.coverImage}
-            alt={project.title}
-            aspectRatio="h-full w-full"
-            containerClassName="w-full h-full border-none"
-            className="opacity-75"
-            loading="eager"
-          />
-        </div>
-
-        {/* Dynamic Dark Gradient Overlays */}
-        <div 
-          className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/70 pointer-events-none"
-          style={{
-            backgroundImage: "linear-gradient(to top, rgba(10,10,11,1) 0%, rgba(10,10,11,0.1) 40%, rgba(10,10,11,0.7) 100%)"
-          }}
-        />
-
-        {/* Back Link float control */}
-        <div className="absolute top-24 left-6 lg:left-8 z-10">
-          <Link
-            to="/portfolio"
-            className="group inline-flex items-center gap-2 px-4 py-2 bg-black/40 border border-white/10 hover:border-white/25 rounded-sm backdrop-blur-md text-white font-mono text-xs tracking-widest uppercase transition-all duration-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400"
-          >
-            <ArrowLeft size={12} className="group-hover:-translate-x-1 transition-transform" />
-            <span>back.to_portfolio()</span>
-          </Link>
-        </div>
-
-        {/* Bottom Centered Title & Metadata Panel */}
-        <div className="absolute bottom-12 inset-x-0 max-w-7xl mx-auto px-6 lg:px-8 text-left z-10 flex flex-col items-start justify-end h-full pt-20">
-          <motion.div
-            initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-            className="space-y-3"
-          >
-            <span className="text-xs md:text-sm font-mono tracking-widest text-emerald-400 uppercase block">
-              // CATEGORY_ID: {project.category}
-            </span>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extralight tracking-wide text-white font-sans uppercase filter drop-shadow-[0_2px_15px_rgba(0,0,0,0.4)]">
-              {project.title}
-            </h1>
-            <div className="flex items-center gap-2 text-xs md:text-sm font-mono tracking-widest text-white/70">
-              <span>{project.year}</span>
-              <span>•</span>
-              <span className="uppercase">{project.client}</span>
+      {/* Cover + meta */}
+      <section className={CONTAINER} aria-label="Project summary">
+        <InView>
+          <Cover src={project.coverImage} alt={project.title} />
+        </InView>
+        <InView className="mt-10 grid grid-cols-2 gap-y-8 border-b border-foreground/10 pb-10 md:grid-cols-4">
+          {meta.map((m) => (
+            <div key={m.label} className="pr-4">
+              <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{m.label}</div>
+              <div className="mt-2 text-lg font-medium capitalize text-foreground">{m.value}</div>
             </div>
-          </motion.div>
-        </div>
-
+          ))}
+        </InView>
+        <InView className="mt-8 flex flex-wrap items-center justify-between gap-6">
+          <div className="flex flex-wrap gap-2">
+            {project.camera.split(',').map((t) => (
+              <span key={t} className="rounded-full border border-foreground/15 px-4 py-1.5 text-sm text-foreground">
+                {t.trim()}
+              </span>
+            ))}
+          </div>
+          <a href={GITHUB[project.slug] ?? 'https://github.com/jamshaid-0206'} target="_blank" rel="noopener noreferrer" className={BTN_PRIMARY}>
+            <Github size={16} /> View source
+            <ArrowUpRight size={16} className="transition-transform duration-300 group-hover:rotate-45" />
+          </a>
+        </InView>
       </section>
 
-      {/* SECTION B: DOUBLE COLUMN METADATA BLOCK & PARAGRAPH INFO */}
-      <section className="py-16 md:py-24 max-w-7xl mx-auto px-6 lg:px-8" aria-label="Project Details">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-          
-          {/* LEFT AREA: Tabular project metadata blocks (4-columns width) */}
-          <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-24">
-            <ScrollReveal>
-              <div className="border border-border/80 bg-card/25 rounded-sm divide-y divide-border/60 shadow-lg">
-                {/* Meta item: Client */}
-                <div className="p-5 flex items-start gap-4">
-                  <ShieldCheck className="text-emerald-400 shrink-0 mt-0.5" size={16} />
-                  <div>
-                    <span className="block font-mono text-[10px] tracking-widest text-muted-foreground uppercase">CLIENT</span>
-                    <span className="text-sm font-light text-foreground mt-0.5 block">{project.client}</span>
-                  </div>
-                </div>
-
-                {/* Meta item: Stack (mapped from camera) */}
-                <div className="p-5 flex items-start gap-4">
-                  <Layers className="text-emerald-400 shrink-0 mt-0.5" size={16} />
-                  <div>
-                    <span className="block font-mono text-[10px] tracking-widest text-muted-foreground uppercase">TECH_STACK</span>
-                    <span className="text-sm font-light text-foreground mt-0.5 block leading-relaxed">{project.camera}</span>
-                  </div>
-                </div>
-
-                {/* Meta item: Location */}
-                <div className="p-5 flex items-start gap-4">
-                  <MapPin className="text-emerald-400 shrink-0 mt-0.5" size={16} />
-                  <div>
-                    <span className="block font-mono text-[10px] tracking-widest text-muted-foreground uppercase">LOCATION</span>
-                    <span className="text-sm font-light text-foreground mt-0.5 block">{project.location}</span>
-                  </div>
-                </div>
-
-                {/* Meta item: Year */}
-                <div className="p-5 flex items-start gap-4">
-                  <Calendar className="text-emerald-400 shrink-0 mt-0.5" size={16} />
-                  <div>
-                    <span className="block font-mono text-[10px] tracking-widest text-muted-foreground uppercase">YEAR</span>
-                    <span className="text-sm font-light text-foreground mt-0.5 block">{project.year}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* GitHub Button link (Conditional if repository is accessible) */}
-              <div className="mt-6">
-                <a
-                  href={getGithubUrl(project.slug)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-2.5 px-5 py-3.5 border border-emerald-400/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 active:bg-emerald-500/25 font-mono text-xs tracking-wider uppercase rounded-sm transition-all duration-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400"
-                >
-                  <Github size={14} />
-                  <span>VIEW_REPOS_SOURCE()</span>
-                  <ExternalLink size={12} className="opacity-60" />
-                </a>
-              </div>
-            </ScrollReveal>
-          </div>
-
-          {/* RIGHT AREA: Case Study Structured Content (8-columns width) */}
-          <div className="lg:col-span-8 text-left space-y-12">
-            
-            {/* 1. OVERVIEW */}
-            <ScrollReveal delay={0.1}>
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] md:text-xs font-mono tracking-widest text-emerald-500 uppercase">
-                      // 01_PROJECT_OVERVIEW
-                    </span>
-                    <div className="h-px flex-1 bg-border/40" />
-                  </div>
-                  <h2 className="text-2xl md:text-3xl font-light tracking-wide text-foreground">
-                    The Mission & Overview
-                  </h2>
-                  <p className="text-base md:text-lg font-light leading-relaxed text-muted-foreground select-text whitespace-pre-line">
-                    {project.overview}
-                  </p>
-                </div>
-
-                {/* Cyberpunk Telemetry Metrics Dashboard */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-                  {getProjectStats(project.slug).map((stat, idx) => {
-                    const StatIcon = stat.icon;
-                    return (
-                      <div 
-                        key={idx} 
-                        className="bg-zinc-950/40 backdrop-blur-md border border-white/5 rounded-sm p-4 flex flex-col justify-between hover:border-emerald-500/20 transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.15)] group relative"
-                      >
-                        {/* Status blinking dot */}
-                        <span className="absolute top-3 right-3 w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                        
-                        <div className="flex items-center gap-2 text-zinc-500 font-mono text-[9px] tracking-widest">
-                          <StatIcon size={12} className="text-emerald-400 group-hover:scale-110 transition-transform" />
-                          <span>{stat.label}</span>
-                        </div>
-                        
-                        <div className="my-2.5">
-                          <span className="text-2xl font-extralight tracking-tight text-white font-mono drop-shadow-[0_0_10px_rgba(16,185,129,0.15)]">
-                            {stat.value}
-                          </span>
-                        </div>
-                        
-                        <span className="text-[10px] text-zinc-500 font-light leading-relaxed">
-                          {stat.desc}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </ScrollReveal>
-
-            {/* 2. CHALLENGE & SOLUTION */}
-            <ScrollReveal delay={0.15}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                {/* Challenge Card */}
-                <div className="border border-border/80 bg-rose-500/[0.01] hover:border-rose-500/20 rounded-sm p-6 space-y-3 transition-colors duration-300">
-                  <div className="flex items-center gap-2.5 text-rose-400 font-mono text-xs tracking-wider uppercase">
-                    <Cpu size={14} className="text-rose-500" />
-                    <span>The Challenge</span>
-                  </div>
-                  <p className="text-sm md:text-base font-light leading-relaxed text-muted-foreground select-text">
-                    {project.challenge}
-                  </p>
-                </div>
-
-                {/* Solution Card */}
-                <div className="border border-border/80 bg-emerald-500/[0.01] hover:border-emerald-500/20 rounded-sm p-6 space-y-3 transition-colors duration-300">
-                  <div className="flex items-center gap-2.5 text-emerald-400 font-mono text-xs tracking-wider uppercase">
-                    <Lightbulb size={14} className="text-emerald-400" />
-                    <span>The Solution</span>
-                  </div>
-                  <p className="text-sm md:text-base font-light leading-relaxed text-muted-foreground select-text">
-                    {project.solution}
-                  </p>
-                </div>
-              </div>
-            </ScrollReveal>
-
-            {/* 3. CORE FEATURES */}
-            <ScrollReveal delay={0.2}>
-              <div className="space-y-4 mt-8">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] md:text-xs font-mono tracking-widest text-emerald-500 uppercase">
-                    // 02_CORE_SYSTEM_CAPABILITIES
-                  </span>
-                  <div className="h-px flex-1 bg-border/40" />
-                </div>
-                <h3 className="text-xl md:text-2xl font-light tracking-wide text-foreground">
-                  Key Functionality
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {project.featuresList.map((feat, idx) => {
-                    const [title, desc] = feat.split(': ');
-                    return (
-                      <div 
-                        key={idx} 
-                        className="p-5 rounded-sm border border-border/60 bg-card/10 flex flex-col space-y-1.5 hover:border-emerald-500/10 transition-all duration-300"
-                      >
-                        <span className="font-mono text-xs text-emerald-400">0{idx + 1}. {title}</span>
-                        <p className="text-xs md:text-sm font-light text-muted-foreground leading-relaxed">
-                          {desc || ""}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </ScrollReveal>
-
-            {/* 4. OPTIONAL DEMO VIDEO STREAM */}
-            {project.demoVideoUrl && (
-              <ScrollReveal delay={0.25}>
-                <div className="mt-8">
-                  <ProjectDemoVideo
-                    videoUrl={project.demoVideoUrl}
-                    posterUrl={project.demoVideoPoster}
-                    title={project.title}
-                  />
-                </div>
-              </ScrollReveal>
-            )}
-
-            {/* 5. DEVELOPMENT PROCESS STAGE FLOW */}
-            <ScrollReveal delay={0.3}>
-              <div className="space-y-6 mt-8">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] md:text-xs font-mono tracking-widest text-emerald-500 uppercase">
-                    // 03_DEVELOPMENT_LOGS_PROCESS
-                  </span>
-                  <div className="h-px flex-1 bg-border/40" />
-                </div>
-                <h3 className="text-xl md:text-2xl font-light tracking-wide text-foreground">
-                  The Journey: Planning to Production
-                </h3>
-                
-                {/* Horizontal flow line for desktops / Vertical list for mobiles */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-2 relative pt-2">
-                  {processSteps.map((step, idx) => {
-                    const StepIcon = step.icon;
-                    return (
-                      <div key={idx} className="relative flex flex-col items-start md:items-center text-left md:text-center p-4 bg-card/15 border border-border/40 rounded-sm hover:border-emerald-500/10 transition-colors duration-300">
-                        {/* Process index badge */}
-                        <span className="font-mono text-[9px] text-emerald-500/60 mb-2 font-bold tracking-widest">
-                          STEP_{step.num}
-                        </span>
-                        
-                        <div className="w-10 h-10 rounded-full border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-center text-emerald-400 mb-2">
-                          <StepIcon size={16} />
-                        </div>
-
-                        <span className="text-sm font-light text-foreground">{step.title}</span>
-                        <span className="text-[10px] text-muted-foreground font-mono mt-0.5">{step.subtitle}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <p className="text-sm md:text-base font-light leading-relaxed text-muted-foreground mt-4 select-text">
-                  {project.developmentProcess}
-                </p>
-              </div>
-            </ScrollReveal>
-
-            {/* 3b. SYSTEM ARCHITECTURE & DATA FLOW */}
-            <ScrollReveal delay={0.32}>
-              <div className="space-y-6 mt-8">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] md:text-xs font-mono tracking-widest text-emerald-500 uppercase">
-                    // 03B_SYSTEM_ARCHITECTURE
-                  </span>
-                  <div className="h-px flex-1 bg-border/40" />
-                </div>
-                <h3 className="text-xl md:text-2xl font-light tracking-wide text-foreground">
-                  Architecture & Signal Topology
-                </h3>
-                <SystemTopology techStack={project.camera} />
-              </div>
-            </ScrollReveal>
-
-            {/* 6. TECHNICAL HIGHLIGHTS */}
-            <ScrollReveal delay={0.35}>
-              <div className="space-y-4 mt-8">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] md:text-xs font-mono tracking-widest text-emerald-500 uppercase">
-                    // 04_ADVANCED_IMPLEMENTATION_DETAILS
-                  </span>
-                  <div className="h-px flex-1 bg-border/40" />
-                </div>
-                <h3 className="text-xl md:text-2xl font-light tracking-wide text-foreground">
-                  Technical Highlights
-                </h3>
-                <div className="space-y-3">
-                  {project.technicalHighlights.map((highlight, index) => (
-                    <div 
-                      key={index} 
-                      className="p-4 rounded-sm border border-border/80 bg-zinc-950/60 flex items-start gap-3 hover:border-emerald-500/20 transition-all duration-300"
-                    >
-                      <span className="font-mono text-xs text-emerald-400 shrink-0 mt-0.5">$ [hl_0{index + 1}]</span>
-                      <p className="text-sm font-light text-muted-foreground select-text leading-relaxed">
-                        {highlight}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </ScrollReveal>
-
-            {/* 7. RESULTS & LESSONS LEARNED */}
-            <ScrollReveal delay={0.4}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                {/* Results Card */}
-                <div className="border border-border/80 bg-emerald-500/[0.01] hover:border-emerald-500/10 rounded-sm p-6 space-y-3 transition-colors duration-300">
-                  <div className="flex items-center gap-2.5 text-emerald-400 font-mono text-xs tracking-wider uppercase">
-                    <TrendingUp size={14} className="text-emerald-400" />
-                    <span>Project Results</span>
-                  </div>
-                  <p className="text-sm md:text-base font-light leading-relaxed text-muted-foreground select-text">
-                    {project.results}
-                  </p>
-                </div>
-
-                {/* Lessons Learned Card */}
-                <div className="border border-border/80 bg-zinc-900/10 hover:border-emerald-500/10 rounded-sm p-6 space-y-3 transition-colors duration-300">
-                  <div className="flex items-center gap-2.5 text-zinc-400 font-mono text-xs tracking-wider uppercase">
-                    <BookOpen size={14} className="text-emerald-400" />
-                    <span>Lessons Learned</span>
-                  </div>
-                  <p className="text-sm md:text-base font-light leading-relaxed text-muted-foreground select-text">
-                    {project.lessonsLearned}
-                  </p>
-                </div>
-              </div>
-            </ScrollReveal>
-
-          </div>
-
+      {/* Overview + stats */}
+      <section className={`${CONTAINER} py-24 md:py-36`} aria-label="Overview">
+        <div className="grid items-start gap-6 lg:grid-cols-[0.35fr_1fr] lg:gap-12">
+          <Eyebrow>Overview</Eyebrow>
+          <InView>
+            <p className="text-[clamp(1.5rem,3vw,2.6rem)] font-medium leading-[1.2] tracking-[-0.03em] text-foreground">{project.overview}</p>
+          </InView>
+        </div>
+        <div className="mt-20 grid gap-y-12 sm:grid-cols-3">
+          {stats.map((s, i) => (
+            <InView key={s.label} delay={i * 0.08} className="border-l border-foreground/10 pl-6">
+              <div className="text-[clamp(3rem,6vw,5.5rem)] font-semibold leading-none tracking-[-0.05em] text-foreground">{s.value}</div>
+              <div className="mt-3 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{s.label}</div>
+            </InView>
+          ))}
         </div>
       </section>
 
-      {/* SECTION B2: NUMERICAL TELEMETRY METRICS IN-VIEW COUNT-UP */}
-      <section className="py-12 max-w-7xl mx-auto px-6 lg:px-8 border-t border-border/40">
-        <ScrollReveal>
-          <ProjectStats projectSlug={project.slug} />
-        </ScrollReveal>
+      {/* Challenge / Solution */}
+      <section className="border-y border-foreground/10 bg-secondary/40 py-24 md:py-32" aria-label="Challenge and solution">
+        <div className={`${CONTAINER} grid gap-14 md:grid-cols-2 md:gap-20`}>
+          {[
+            { k: '01', t: 'The challenge', d: project.challenge },
+            { k: '02', t: 'The solution', d: project.solution },
+          ].map((b, i) => (
+            <InView key={b.k} delay={i * 0.1}>
+              <div className="font-mono text-sm text-emerald-500">{b.k}</div>
+              <h3 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-foreground md:text-5xl">{b.t}</h3>
+              <p className="mt-6 text-lg leading-relaxed text-muted-foreground">{b.d}</p>
+            </InView>
+          ))}
+        </div>
       </section>
 
-      {/* SECTION C: MASONRY-STYLE INTERACTIVE IMAGE GALLERY */}
-      <section className="py-16 max-w-7xl mx-auto px-6 lg:px-8 border-t border-border/40" aria-label="Visual Exhibition">
-        <ScrollReveal>
-          <div className="mb-10 text-center md:text-left space-y-1">
-            <span className="text-[10px] md:text-xs font-mono tracking-widest text-emerald-500 uppercase block">
-              // GRAPHICAL_ASSETS_CATALOGUE
-            </span>
-            <h3 className="text-xl md:text-2xl font-light tracking-wide text-foreground">
-              Exhibition Gallery (8–12 Images)
-            </h3>
-            <p className="text-muted-foreground text-xs font-light max-w-md">
-              A detailed visual walk-through of active dashboard interfaces, UI modules, code frames, and production layouts. Click on any block to expand fullscreen.
-            </p>
-          </div>
-        </ScrollReveal>
-
-        {/* Masonry-like grid sizing logic respecting specific item aspect ratio with SkeletonImage support */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
-          {project.images.map((img, index) => {
-            // Determine Tailwind CSS grid classes based on photo index and aspect ratios
-            // Create a gorgeous alternating pattern that perfectly aligns 8-12 images
-            const gridClass = 
-              index === 1 || index === 4 || index === 7 
-                ? 'col-span-1 aspect-[3/4]' 
-                : index === 0 || index === 6 || index === 9
-                ? 'col-span-1 md:col-span-2 aspect-[16/10]' 
-                : 'aspect-square col-span-1';
-
+      {/* Features */}
+      <section className={`${CONTAINER} py-24 md:py-36`} aria-label="Key features">
+        <SectionTitle eyebrow="Key features" title="What it does." />
+        <div className="grid gap-px overflow-hidden rounded-3xl border border-foreground/10 bg-foreground/10 md:grid-cols-2">
+          {project.featuresList.map((f, i) => {
+            const [title, ...rest] = f.split(': ');
             return (
-              <ScrollReveal key={index} delay={index * 0.05}>
-                <div
-                  onClick={() => setLightboxIndex(index)}
-                  className={cn(
-                    "relative overflow-hidden group cursor-zoom-in bg-zinc-950 border border-border/40 hover:border-emerald-500/25 rounded-sm shadow-md transition-all duration-300",
-                    gridClass
-                  )}
-                >
-                  {/* Visual blur-up skeleton loader */}
-                  <SkeletonImage
-                    src={img.url}
-                    alt={img.alt}
-                    aspectRatio="w-full h-full"
-                    containerClassName="w-full h-full border-none"
-                    className="transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-                    loading="lazy"
-                  />
-                  
-                  {/* Hover zoom overlay metadata badge */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-4 text-center">
-                    <span className="font-mono text-[9px] tracking-widest text-emerald-400 border border-emerald-500/30 bg-black/80 px-2.5 py-1.5 rounded-sm select-none mb-2 shadow-lg">
-                      EXPAND_ASSET()
-                    </span>
-                    <span className="text-white text-xs font-light max-w-[200px] line-clamp-2">
-                      {img.alt}
-                    </span>
-                  </div>
-                </div>
-              </ScrollReveal>
+              <InView key={i} y={20} className="group bg-background p-7 transition-colors duration-500 hover:bg-secondary md:p-10">
+                <div className="font-mono text-xs text-emerald-500">{String(i + 1).padStart(2, '0')}</div>
+                <h3 className="mt-4 text-xl font-semibold tracking-[-0.02em] text-foreground md:text-2xl">{title}</h3>
+                {rest.length > 0 && <p className="mt-3 leading-relaxed text-muted-foreground">{rest.join(': ')}</p>}
+              </InView>
             );
           })}
         </div>
       </section>
 
-      {/* SECTION D: PREV/NEXT ROUTE LINK DECK */}
-      <ProjectNavigation currentProjectSlug={project.slug} />
+      {project.demoVideoUrl && (
+        <section className={`${CONTAINER} pb-24 md:pb-36`} aria-label="Demo">
+          <SectionTitle eyebrow="Demo" title="See it in action." />
+          <InView>
+            <ProjectDemoVideo videoUrl={project.demoVideoUrl} posterUrl={project.demoVideoPoster} title={project.title} />
+          </InView>
+        </section>
+      )}
 
-      {/* SECTION E: FULL SCREEN IMAGE LIGHTBOX DRAWER */}
+      {/* Process */}
+      <section className={`${CONTAINER} pb-24 md:pb-36`} aria-label="Process">
+        <SectionTitle eyebrow="Process" title="From idea to production." />
+        <div className="relative grid grid-cols-1 gap-6 sm:grid-cols-5">
+          <div className="absolute left-0 right-0 top-6 hidden h-px bg-foreground/10 sm:block" />
+          {PROCESS.map((p, i) => (
+            <InView key={p} delay={i * 0.08} y={20} className="relative flex items-center gap-4 sm:block">
+              <div className="relative z-10 grid h-12 w-12 shrink-0 place-items-center rounded-full border border-foreground/15 bg-background font-mono text-sm text-emerald-500">
+                {String(i + 1).padStart(2, '0')}
+              </div>
+              <div className="text-xl font-semibold tracking-[-0.02em] text-foreground sm:mt-5">{p}</div>
+            </InView>
+          ))}
+        </div>
+        <InView>
+          <p className="mt-12 max-w-3xl text-lg leading-relaxed text-muted-foreground">{project.developmentProcess}</p>
+        </InView>
+      </section>
+
+      {/* Stack + highlights */}
+      <section className="border-y border-foreground/10 bg-secondary/40 py-24 md:py-32" aria-label="Technical details">
+        <div className={`${CONTAINER} grid gap-16 lg:grid-cols-[0.8fr_1.2fr]`}>
+          <div>
+            <Eyebrow>Tech stack</Eyebrow>
+            <ul className="divide-y divide-foreground/10 border-y border-foreground/10">
+              {project.technologiesList.map((t, i) => (
+                <li key={t} className="flex items-baseline gap-4 py-4">
+                  <span className="font-mono text-xs text-muted-foreground">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="text-lg text-foreground">{t}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <Eyebrow>Technical highlights</Eyebrow>
+            <div className="space-y-6">
+              {project.technicalHighlights.map((h, i) => (
+                <InView key={i} y={20} className="flex gap-5">
+                  <span className="mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-500 font-mono text-xs font-bold text-black">{i + 1}</span>
+                  <p className="text-lg leading-relaxed text-foreground">{h}</p>
+                </InView>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Results */}
+      <section className={`${CONTAINER} py-24 md:py-36`} aria-label="Results">
+        <div className="grid gap-14 md:grid-cols-2 md:gap-20">
+          <InView>
+            <Eyebrow>Results</Eyebrow>
+            <p className="text-2xl font-medium leading-snug tracking-[-0.02em] text-foreground md:text-3xl">{project.results}</p>
+          </InView>
+          <InView delay={0.1}>
+            <Eyebrow>Lessons learned</Eyebrow>
+            <p className="text-lg leading-relaxed text-muted-foreground">{project.lessonsLearned}</p>
+          </InView>
+        </div>
+      </section>
+
+      {/* Gallery */}
+      {n > 0 && (
+        <section className={`${CONTAINER} pb-24 md:pb-36`} aria-label="Gallery">
+          <SectionTitle eyebrow="Gallery" title="A closer look." />
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+            {project.images.map((img, i) => (
+              <motion.button
+                key={i}
+                type="button"
+                onClick={() => setLightboxIndex(i)}
+                initial={reduce ? false : { opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.8, delay: (i % 3) * 0.06, ease: EASE }}
+                className={cn(
+                  'group relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-950',
+                  i % 5 === 0 ? 'col-span-2 aspect-[16/10]' : 'aspect-square'
+                )}
+                aria-label={`Open image: ${img.alt}`}
+              >
+                <img src={img.url} alt={img.alt} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <span className="absolute right-3 top-3 grid h-9 w-9 scale-0 place-items-center rounded-full bg-white text-black transition-transform duration-300 group-hover:scale-100">
+                  <Maximize2 size={15} />
+                </span>
+              </motion.button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Next project */}
+      <section className="border-t border-foreground/10" aria-label="Next project">
+        <Link to={`/portfolio/${next.slug}`} className="group block">
+          <div className={`${CONTAINER} flex flex-col gap-8 py-20 md:flex-row md:items-center md:justify-between md:py-28`}>
+            <div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground">Next project</div>
+              <div className="mt-4 text-[clamp(2.5rem,7vw,6.5rem)] font-semibold leading-[0.92] tracking-[-0.05em] text-foreground transition-colors duration-500 group-hover:text-emerald-500">
+                {next.title}
+              </div>
+            </div>
+            <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-950 md:w-80">
+              <img src={next.coverImage} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
+              <span className="absolute inset-0 grid place-items-center">
+                <span className="grid h-16 w-16 place-items-center rounded-full bg-emerald-500 text-black transition-transform duration-500 group-hover:rotate-45">
+                  <ArrowUpRight size={24} />
+                </span>
+              </span>
+            </div>
+          </div>
+        </Link>
+        <div className={`${CONTAINER} pb-16`}>
+          <Link to="/portfolio" className={BTN_GHOST}>
+            <ArrowLeft size={16} /> Back to all work
+          </Link>
+        </div>
+      </section>
+
       {lightboxIndex !== null && (
         <Lightbox
           images={project.images}
           currentIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
-          onPrev={handlePrevImage}
-          onNext={handleNextImage}
+          onPrev={() => setLightboxIndex((i) => (i === null ? i : (i - 1 + n) % n))}
+          onNext={() => setLightboxIndex((i) => (i === null ? i : (i + 1) % n))}
         />
       )}
-
-      {/* Keyboard Shortcuts Navigation Help */}
-      <div className="sr-only">
-        Use Left and Right arrow keys to navigate the gallery when expanded, and Escape to exit.
-      </div>
-
     </PageTransition>
   );
 }

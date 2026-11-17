@@ -1,92 +1,103 @@
-import { Github, Linkedin, Instagram, Mail } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowUp, ArrowUpRight } from 'lucide-react';
 import { photographerInfo } from '../../data/photographer';
+import { LiveClock } from '../ui/Premium';
+
+const NAV = [
+  { label: 'Home', path: '/' },
+  { label: 'Work', path: '/portfolio' },
+  { label: 'About', path: '/about' },
+  { label: 'Contact', path: '/contact' },
+];
 
 export function Footer() {
-  const currentYear = new Date().getFullYear();
-  const ghUrl = photographerInfo.socialLinks.linkedin; // "https://github.com/jamshaid-0206"
-  const instaUrl = photographerInfo.socialLinks.instagram;
-  const mailUrl = `mailto:${photographerInfo.email}`;
-
-  // Behance custom inline SVG icon
-  const BehanceIcon = ({ size = 20 }: { size?: number }) => (
-    <svg
-      role="img"
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      fill="currentColor"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <title>Behance</title>
-      <path d="M22 10.7h-5.7c-.1-.7.4-1.8 1.6-1.8 1.2 0 1.5.9 1.5.9h2.3c0-.1-.4-2.8-3.8-2.8-3.4 0-4 2.8-4 4.5 0 2.2.9 4.5 4.1 4.5 3.3 0 3.8-2.5 3.8-3.4h-2.1c-.1.6-.5 1.4-1.7 1.4-1.2 0-1.7-.8-1.7-1.8h9c.1-1 .1-3.5-3.1-3.5zm-3.2-1.8c-1 0-1.3.7-1.4 1h2.7c-.1-.4-.4-1-1.3-1zM9.5 5.5H3v13h6.7c3.1 0 4.1-1.6 4.1-3.2 0-1.4-.8-2.5-2.2-2.8 1-.3 1.8-1.2 1.8-2.5 0-1.6-.9-4.5-4.5-4.5zm-3.8 4.2h3c.8 0 1.4.3 1.4 1 0 .7-.6 1.1-1.4 1.1h-3v-2.1zm0 4.4h3.3c.8 0 1.6.4 1.6 1.2 0 .8-.8 1.2-1.6 1.2h-3.3v-2.4zM16.5 5.2h6.5v1.3h-6.5V5.2z" />
-    </svg>
-  );
+  const year = new Date().getFullYear();
+  const socials = [
+    { label: 'GitHub', href: photographerInfo.socialLinks.linkedin },
+    { label: 'Instagram', href: photographerInfo.socialLinks.instagram },
+    { label: 'Email', href: `mailto:${photographerInfo.email}` },
+    { label: 'Resume', href: '/resume.pdf' },
+  ];
 
   return (
-    <footer className="border-t border-border bg-background transition-colors py-12 mt-auto">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-        
-        {/* Left Side: Copyright */}
-        <div className="text-sm text-muted-foreground font-light tracking-wide text-center md:text-left select-none">
-          © {currentYear} {photographerInfo.name}. All rights reserved.
+    <footer className="relative mt-auto overflow-hidden border-t border-foreground/10 bg-background">
+      <div className="mx-auto w-full max-w-[1400px] px-5 pt-16 sm:px-8 md:pt-20 lg:px-12">
+        <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          <div>
+            <p className="max-w-sm text-2xl font-semibold leading-tight tracking-[-0.03em] text-foreground md:text-3xl">
+              Building fast, beautiful products for the web & mobile.
+            </p>
+            <Link
+              to="/contact"
+              className="group mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-black transition-transform hover:scale-[1.04]"
+            >
+              Start a project
+              <ArrowUpRight size={15} className="transition-transform duration-300 group-hover:rotate-45" />
+            </Link>
+          </div>
+
+          <div>
+            <h3 className="mb-4 font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Menu</h3>
+            <ul className="space-y-2">
+              {NAV.map((n) => (
+                <li key={n.path}>
+                  <Link to={n.path} className="footer-link text-foreground">
+                    {n.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="mb-4 font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Socials</h3>
+            <ul className="space-y-2">
+              {socials.map((s) => (
+                <li key={s.label}>
+                  <a
+                    href={s.href}
+                    {...(s.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    {...(s.label === 'Resume' ? { download: 'Jamshaid_Ghafoor_Resume.pdf' } : {})}
+                    className="footer-link text-foreground"
+                  >
+                    {s.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="mb-4 font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Local time</h3>
+            <p className="text-foreground">
+              <LiveClock /> PKT
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{photographerInfo.location}</p>
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="group mt-6 inline-flex items-center gap-2 text-sm font-medium text-foreground"
+            >
+              <span className="grid h-10 w-10 place-items-center rounded-full border border-foreground/20 transition-colors group-hover:border-emerald-500 group-hover:bg-emerald-500 group-hover:text-black">
+                <ArrowUp size={16} className="transition-transform duration-300 group-hover:-translate-y-0.5" />
+              </span>
+              Back to top
+            </button>
+          </div>
         </div>
 
-        {/* Right Side: Social links matching spec mapping */}
-        <div className="flex items-center gap-6 text-muted-foreground">
-          {/* Instagram Link */}
-          <a
-            href={instaUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5 cursor-pointer"
-            aria-label="Instagram Profile"
-          >
-            <Instagram size={18} />
-          </a>
-
-          {/* Email link */}
-          <a
-            href={mailUrl}
-            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5 cursor-pointer"
-            aria-label="Send Email"
-          >
-            <Mail size={18} />
-          </a>
-
-          {/* LinkedIn maps to GitHub URL */}
-          <a
-            href={ghUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5 cursor-pointer"
-            aria-label="LinkedIn Profile"
-          >
-            <Linkedin size={18} />
-          </a>
-
-          {/* Behance maps to GitHub URL */}
-          <a
-            href={ghUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5 cursor-pointer"
-            aria-label="Behance Portfolio"
-          >
-            <BehanceIcon size={18} />
-          </a>
-
-          {/* GitHub link directly */}
-          <a
-            href={ghUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm p-1.5 cursor-pointer"
-            aria-label="GitHub Profile"
-          >
-            <Github size={18} />
-          </a>
+        {/* Giant wordmark */}
+        <div className="mt-16 select-none overflow-hidden md:mt-24" aria-hidden="true">
+          <div className="footer-wordmark whitespace-nowrap text-center font-semibold leading-[0.78] tracking-[-0.06em] text-[18.5vw] lg:text-[16.5rem]">
+            Jamshaid
+          </div>
         </div>
 
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-foreground/10 py-6 text-xs text-muted-foreground sm:flex-row">
+          <span>
+            © {year} {photographerInfo.name}. All rights reserved.
+          </span>
+          <span>Designed & built with React, TypeScript & WebGL</span>
+        </div>
       </div>
     </footer>
   );
