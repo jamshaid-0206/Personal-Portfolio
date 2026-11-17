@@ -15,6 +15,7 @@ export function Footer() {
   const socials = [
     { label: 'GitHub', href: photographerInfo.socialLinks.linkedin },
     { label: 'Instagram', href: photographerInfo.socialLinks.instagram },
+    { label: 'WhatsApp', href: photographerInfo.whatsapp },
     { label: 'Email', href: `mailto:${photographerInfo.email}` },
     { label: 'Resume', href: '/resume.pdf' },
   ];

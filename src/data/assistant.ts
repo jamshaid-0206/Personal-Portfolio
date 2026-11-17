@@ -51,7 +51,7 @@ ROLE: ${me.tagline}
 LOCATION: ${me.location} (time zone PKT, GMT+5)
 AVAILABILITY: ${me.availability}
 EMAIL: ${me.email}
-PHONE: ${me.phone}
+WHATSAPP (business, preferred for quick chats): ${me.phone} — ${me.whatsapp.split('?')[0]}
 GITHUB: ${me.socialLinks.linkedin}
 INSTAGRAM: ${me.socialLinks.instagram}
 RESUME: /resume.pdf
@@ -91,7 +91,7 @@ RULES
 ACTIONS
 At the very end of a reply you may add up to 2 helpful buttons, each on its own line, in exactly this form:
 [[Button label|/path]]
-Allowed targets: the site pages listed below, "mailto:${me.email}", "/resume.pdf", or a project's live-site or code link listed below. Only add a button when it clearly helps.
+Allowed targets: the site pages listed below, "mailto:${me.email}", "${me.whatsapp.split('?')[0]}" (WhatsApp), "/resume.pdf", or a project's live-site or code link listed below. Only add a button when it clearly helps.
 
 FACTS
 ${buildFacts()}`;

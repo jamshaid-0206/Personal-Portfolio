@@ -176,6 +176,9 @@ export function Header() {
                 <a href={photographerInfo.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
                   GitHub
                 </a>
+                <a href={photographerInfo.whatsapp} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                  WhatsApp
+                </a>
                 <a href={photographerInfo.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
                   Instagram
                 </a>

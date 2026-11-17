@@ -99,6 +99,7 @@ function detectIntents(t: string): Intent[] {
 const projectAction = (p: Project): AssistantAction => ({ label: `View ${SHORT_NAME[p.slug] ?? p.title.split(' ')[0]}`, href: `/portfolio/${p.slug}` });
 const EMAIL: AssistantAction = { label: 'Email Jamshaid', href: `mailto:${me.email}` };
 const CONTACT: AssistantAction = { label: 'Contact page', href: '/contact' };
+const WHATSAPP: AssistantAction = { label: 'WhatsApp him', href: me.whatsapp };
 
 function describeProject(p: Project, ur: boolean): BrainReply {
   const what = p.description.split('\n\n')[0].split('. ').slice(0, 2).join('. ').replace(/\.?$/, '.');
@@ -185,15 +186,15 @@ export function localReply(input: string): BrainReply {
           `Yes — he's **${me.availability.toLowerCase()}**. He builds web apps, React Native mobile apps, REST APIs and AI integrations. For rates and timelines, the quickest way is a short message describing your project.`,
           `Ji haan — woh freelance, contract aur full-time kaam ke liye available hain. Web apps, mobile apps, APIs aur AI integrations banate hain. Rate aur timeline ke liye apne project ka chhota sa message bhej dein.`
         ),
-        actions: [CONTACT, EMAIL],
+        actions: [WHATSAPP, CONTACT],
       };
     case 'contact':
       return {
         text: say(
-          `You can reach him at **${me.email}** or **${me.phone}**. He usually replies within a day.`,
-          `Aap un se **${me.email}** ya **${me.phone}** par rabta kar sakte hain. Aam taur par ek din mein jawab dete hain.`
+          `You can reach him on **WhatsApp at ${me.phone}** or by email at **${me.email}**. He usually replies within a day.`,
+          `Aap un se **WhatsApp (${me.phone})** ya email **${me.email}** par rabta kar sakte hain. Aam taur par ek din mein jawab dete hain.`
         ),
-        actions: [EMAIL, CONTACT],
+        actions: [WHATSAPP, EMAIL],
       };
     case 'location':
       return {
@@ -259,7 +260,7 @@ export function parseActions(raw: string): BrainReply {
   const actions: AssistantAction[] = [];
   const text = raw
     .replace(/\[\[([^\]|]{1,40})\|([^\]\s]{1,200})\]\]/g, (_, label: string, href: string) => {
-      const external = /^https:\/\/github\.com\/jamshaid-0206/.test(href) || projects.some((p) => p.liveUrl && href.startsWith(p.liveUrl));
+      const external = /^https:\/\/(github\.com\/jamshaid-0206|wa\.me\/923124134549)/.test(href) || projects.some((p) => p.liveUrl && href.startsWith(p.liveUrl));
       if ((/^(\/|mailto:)/.test(href) || external) && actions.length < 2) actions.push({ label: label.trim(), href });
       return '';
     })
