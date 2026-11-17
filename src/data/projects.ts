@@ -2,6 +2,63 @@ import { Project } from '../types';
 
 export const projects: Project[] = [
   {
+    id: "5",
+    title: "Aesthetic Med Pakistan — Skincare E-Commerce Store",
+    slug: "aesthetic-med-pakistan",
+    category: "wordpress",
+    year: "2026",
+    client: "Aesthetic Med Pakistan · Official distributor of IT Pharma Spain",
+    camera: "WordPress, WooCommerce, Elementor Pro, Hello Elementor, Joinchat (WhatsApp), LiteSpeed Cache",
+    location: "Rawalpindi, Pakistan",
+    liveUrl: "https://aestheticmedpak.com/",
+    coverImage: "/projects/aestheticmedpak/cover.webp",
+    description: "A complete WordPress + WooCommerce online store for Aesthetic Med Pakistan, the official Pakistani distributor of IT Pharma Spain — a premium, mobile-first catalogue for HARMONIE dermal fillers, Inbiotec mesotherapy serums, Origin chemical peels and the ELVARÉ / Auréveil corrective skincare lines.\n\nThe store serves two very different buyers from one site: everyday skincare customers who add products to the cart, and doctors and clinics who order professional injectables at a daily rate through a dedicated WhatsApp inquiry flow.",
+    overview: "A live WooCommerce store for a medical-aesthetics distributor, selling 27 products across 22 categories from six brands — ELVARÉ, Auréveil, NXO, HARMONIE, Origin and Inbiotec. Shoppers can browse by skin concern (Brightening, Anti-Aging, Acne & Exfoliation, Sun Protection), by hair care, by brand, or by the Professional range (meso serums, dermal fillers, peels and skin boosters). Homecare products follow a normal cart-and-checkout flow, while clinical products switch to a doctor-only ordering experience that confirms today's rate directly on WhatsApp.",
+    challenge: "The client sells two kinds of products that cannot be sold the same way. Retail skincare needs a fast, trustworthy shop with fixed prices and a simple checkout. Professional injectables and peels are for clinics only, and their prices change daily with import batches and market supply — so showing a fixed price or a normal \"Add to cart\" button would be wrong. On top of that, most customers in Pakistan prefer to confirm orders over WhatsApp, the catalogue spans many brands and overlapping categories, and the site had to feel as premium as the Spanish brands it represents while staying fast on mobile data.",
+    solution: "I built the store on WooCommerce with a fully custom Elementor Pro design on the lightweight Hello Elementor theme. Retail products use the standard cart and secure checkout. Professional products replace the price with a \"Daily Rate (Doctor Inquiry)\" label and a custom \"Doctor Order & Daily Rate Inquiry\" form — doctor/clinic name, WhatsApp number, city and delivery address, quantity and notes — that hands the order to a sales representative on WhatsApp with all details pre-filled. A mega-menu organises the catalogue by Skin Concerns, Hair Care, Brands and Professional, and WhatsApp chat, order-on-call numbers and trust badges sit on every page.",
+    technologiesList: [
+      "WordPress",
+      "WooCommerce (catalogue, cart, checkout, My Account)",
+      "Elementor Pro with the Hello Elementor theme",
+      "Custom WooCommerce product templates",
+      "Joinchat — WhatsApp chat & order buttons",
+      "LiteSpeed Cache for page caching",
+      "Responsive, mobile-first Elementor layouts"
+    ],
+    featuresList: [
+      "Doctor-Only Daily Rate Ordering: Professional injectables, peels and skin boosters show \"Daily Rate (Doctor Inquiry)\" and a clinic order form that sends the request straight to WhatsApp.",
+      "Retail Cart & Checkout: Homecare skincare and hair-care products use WooCommerce's standard cart, account and secure checkout.",
+      "Mega-Menu Catalogue: Shop by skin concern, hair care, brand or professional range — 22 categories across six brands.",
+      "Hero Slider with Dual CTAs: Brand campaigns with \"Explore\" and \"Order on WhatsApp\" actions side by side.",
+      "Bundle Offers: Complete routines (e.g. hair-care and glow-and-protect bundles) presented as discounted bundle cards.",
+      "Bestsellers / New Arrivals / Professional Tabs: Tabbed product carousels on the homepage.",
+      "Product Spotlight & FAQ: A featured-serum banner and an FAQ accordion that helps customers choose the right ELVARÉ serum or sunscreen.",
+      "Always-On WhatsApp & Trust Signals: Floating WhatsApp chat, order-on-call bar, genuine-brands, expert-support and secure-checkout badges, plus a newsletter signup."
+    ],
+    developmentProcess: "I started by mapping the catalogue — brands, skin concerns and the professional range — into a WooCommerce category structure that lets the same product appear in every place a customer might look for it. Next I designed the brand look in Elementor Pro: a warm beige and charcoal palette with gold accents to match the Spanish packaging, rounded product cards and generous white space. I then built the custom product templates, splitting the experience between retail (price + Add to cart) and professional (daily-rate inquiry form that routes to WhatsApp), added the mega-menu, sliders, bundles, tabs, FAQ and footer, and finally tested the full flow on mobile before launch with LiteSpeed caching enabled.",
+    results: "The store is live at aestheticmedpak.com with 27 products across 22 categories and six brands, giving Aesthetic Med Pakistan a professional online home that matches its international brands. Retail customers can order through a normal checkout, while clinics get a dedicated doctor-only ordering path with daily rates confirmed on WhatsApp — the channel the business already uses to close sales.",
+    technicalHighlights: [
+      "Split the WooCommerce product experience in two: standard pricing and Add to cart for retail items, and a 'Daily Rate (Doctor Inquiry)' order form for clinical products.",
+      "Built the doctor order form to compose a pre-filled WhatsApp message with clinic, contact, delivery address and quantity, so the sales team receives complete orders.",
+      "Designed every page in Elementor Pro on the minimal Hello Elementor theme to keep the front end light, with LiteSpeed page caching for speed.",
+      "Structured overlapping taxonomies (concern, brand, professional range) so each product is discoverable from every relevant menu."
+    ],
+    lessonsLearned: "E-commerce in Pakistan is often closed on WhatsApp, not at checkout. Designing around how the business actually sells — fixed prices for retail, daily-rate conversations for clinics — mattered more than forcing every product through a standard cart. It also reinforced how much trust signals (genuine-brand badges, real phone numbers, instant chat) shape a buyer's confidence in a new store.",
+    images: [
+      { url: "/projects/aestheticmedpak/homepage.webp", alt: "Homepage with mega-menu, order-on-call bar and the ELVARÉ hero slider", aspectRatio: "landscape" },
+      { url: "/projects/aestheticmedpak/product-b2b.webp", alt: "Professional product page with the Doctor Order & Daily Rate Inquiry form", aspectRatio: "landscape" },
+      { url: "/projects/aestheticmedpak/mobile.webp", alt: "Mobile homepage and mobile product page", aspectRatio: "landscape" },
+      { url: "/projects/aestheticmedpak/categories.webp", alt: "Shop by Category section with skin-concern tiles", aspectRatio: "landscape" },
+      { url: "/projects/aestheticmedpak/shop.webp", alt: "Shop page with category filter pills and product grid", aspectRatio: "landscape" },
+      { url: "/projects/aestheticmedpak/bundles.webp", alt: "ELVARÉ and Auréveil bundle offer cards", aspectRatio: "landscape" },
+      { url: "/projects/aestheticmedpak/serums.webp", alt: "Corrective Serums section with product cards", aspectRatio: "landscape" },
+      { url: "/projects/aestheticmedpak/bestsellers.webp", alt: "Shop Our Bestsellers tabs with Best Seller, New Arrivals and Professional", aspectRatio: "landscape" },
+      { url: "/projects/aestheticmedpak/spotlight.webp", alt: "Product spotlight banner for the ELVARÉ AHA + BHA serum", aspectRatio: "landscape" },
+      { url: "/projects/aestheticmedpak/faq.webp", alt: "FAQ accordion and trust badges", aspectRatio: "landscape" },
+      { url: "/projects/aestheticmedpak/footer.webp", alt: "Newsletter signup and footer with categories and contact details", aspectRatio: "landscape" }
+    ]
+  },
+  {
     id: "1",
     title: "ReadabilityPro AI Writing Assistant",
     slug: "readability-pro",

@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from 'motion/react';
 import { cn } from '../../lib/utils';
 
-export type FilterCategory = 'all' | 'mobile' | 'ai' | 'frontend' | 'fullstack';
+export type FilterCategory = 'all' | 'mobile' | 'ai' | 'frontend' | 'fullstack' | 'wordpress';
 
 interface CategoryFilterProps {
   activeCategory: FilterCategory;
@@ -15,6 +15,7 @@ const CATEGORIES: { label: string; value: FilterCategory }[] = [
   { label: 'AI', value: 'ai' },
   { label: 'Frontend', value: 'frontend' },
   { label: 'Full-stack', value: 'fullstack' },
+  { label: 'WordPress', value: 'wordpress' },
 ];
 
 export function CategoryFilter({ activeCategory, onCategoryChange, counts }: CategoryFilterProps) {

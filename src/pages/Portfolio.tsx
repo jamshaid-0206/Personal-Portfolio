@@ -34,6 +34,11 @@ function WorkCard({ project, index }: { key?: React.Key; project: Project; index
           <span className="absolute left-5 top-5 rounded-full bg-black/50 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.2em] text-white">
             {project.category}
           </span>
+          {project.liveUrl && (
+            <span className="absolute right-5 top-5 inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-black">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-black" /> Live
+            </span>
+          )}
           <span className="absolute left-1/2 top-1/2 grid h-28 w-28 -translate-x-1/2 -translate-y-1/2 scale-0 place-items-center rounded-full bg-emerald-500 text-sm font-semibold text-black transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-100">
             View
           </span>

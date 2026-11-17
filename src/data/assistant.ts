@@ -39,7 +39,7 @@ export function buildFacts(): string {
   const projectLines = projects
     .map(
       (p) =>
-        `- ${p.title} (${p.category}, ${p.year}) — page: /portfolio/${p.slug}${GITHUB_REPOS[p.slug] ? ` — code: ${GITHUB_REPOS[p.slug]}` : ''}
+        `- ${p.title} (${p.category}, ${p.year}) — page: /portfolio/${p.slug}${p.liveUrl ? ` — live site: ${p.liveUrl}` : ''}${GITHUB_REPOS[p.slug] ? ` — code: ${GITHUB_REPOS[p.slug]}` : ''}
   Client/users: ${p.client}. Stack: ${p.camera}.
   What it is: ${firstParagraph(p.description)}
   Outcome: ${p.results}`
@@ -91,7 +91,7 @@ RULES
 ACTIONS
 At the very end of a reply you may add up to 2 helpful buttons, each on its own line, in exactly this form:
 [[Button label|/path]]
-Allowed targets: the site pages listed below, "mailto:${me.email}", "/resume.pdf", or a project's code link listed below. Only add a button when it clearly helps.
+Allowed targets: the site pages listed below, "mailto:${me.email}", "/resume.pdf", or a project's live-site or code link listed below. Only add a button when it clearly helps.
 
 FACTS
 ${buildFacts()}`;

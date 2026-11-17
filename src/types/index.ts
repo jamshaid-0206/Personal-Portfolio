@@ -8,7 +8,7 @@ export interface Project {
   id: string;
   title: string;
   slug: string;
-  category: 'mobile' | 'ai' | 'frontend' | 'fullstack';
+  category: 'mobile' | 'ai' | 'frontend' | 'fullstack' | 'wordpress';
   year: string;
   client: string;
   camera: string; // Used as the Stack description (e.g., "React, Redux, Node.js")
@@ -25,6 +25,7 @@ export interface Project {
   results: string;
   technicalHighlights: string[];
   lessonsLearned: string;
+  liveUrl?: string;
   demoVideoUrl?: string;
   demoVideoPoster?: string;
 }
