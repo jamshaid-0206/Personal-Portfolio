@@ -210,11 +210,24 @@
   100% { transform: translateX(300%); }
 }
 
-html.lenis, html.lenis body { height: auto; }
-.lenis.lenis-smooth { scroll-behavior: auto !important; }
-.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
-.lenis.lenis-stopped { overflow: clip; }
+
 
 @media (prefers-reduced-motion: reduce) {
   .btn-shine::after, .text-gradient-anim { animation: none; }
 }
+
+/* Aurora: transform-only animation (composited, no repaint on scroll) */
+.aurora-blob {
+  position: absolute;
+  width: 80vmax;
+  height: 80vmax;
+  border-radius: 9999px;
+  will-change: transform;
+}
+.aurora-a { top: -30vmax; left: -25vmax; animation: aurora-a 28s ease-in-out infinite alternate; }
+.aurora-b { bottom: -35vmax; right: -25vmax; animation: aurora-b 34s ease-in-out infinite alternate; }
+.aurora-c { top: 10vmax; left: 20vmax; width: 60vmax; height: 60vmax; animation: aurora-c 24s ease-in-out infinite alternate; }
+@keyframes aurora-a { to { transform: translate3d(15vmax, 10vmax, 0) scale(1.15); } }
+@keyframes aurora-b { to { transform: translate3d(-15vmax, -10vmax, 0) scale(0.9); } }
+@keyframes aurora-c { to { transform: translate3d(-10vmax, 15vmax, 0) scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { .aurora-blob { animation: none; } }

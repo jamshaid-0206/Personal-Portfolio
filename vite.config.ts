@@ -18,7 +18,7 @@ export default defineConfig(() => {
         output: {
           manualChunks: {
             react: ['react', 'react-dom', 'react-dom/client', 'react-router-dom', 'react-helmet-async'],
-            motion: ['motion', 'motion/react', 'lenis'],
+            motion: ['motion', 'motion/react'],
           },
         },
       },

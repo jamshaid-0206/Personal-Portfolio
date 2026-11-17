@@ -95,9 +95,11 @@ export function VelocityMarquee({
   const skew = useTransform(smoothVelocity, [-2000, 2000], [12, -12]);
   const x = useTransform(baseX, (v) => `${wrap(-25, -50, v)}%`);
   const direction = useRef(1);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const onScreen = useInView(wrapRef, { margin: '100px' });
 
   useAnimationFrame((_, delta) => {
-    if (reduce) return;
+    if (reduce || !onScreen) return;
     let moveBy = direction.current * baseVelocity * (delta / 1000);
     const vf = velocityFactor.get();
     if (vf < 0) direction.current = -1;
@@ -107,7 +109,7 @@ export function VelocityMarquee({
   });
 
   return (
-    <div className={`overflow-hidden whitespace-nowrap flex flex-nowrap ${className}`}>
+    <div ref={wrapRef} className={`overflow-hidden whitespace-nowrap flex flex-nowrap ${className}`}>
       <motion.div className="flex flex-nowrap whitespace-nowrap will-change-transform" style={{ x, skewX: reduce ? 0 : skew }}>
         {[0, 1, 2, 3].map((i) => (
           <span key={i} className="flex flex-nowrap shrink-0" aria-hidden={i > 0}>

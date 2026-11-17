@@ -34,15 +34,6 @@ export function Layout({ children }: LayoutProps) {
 
       {/* Content Layer sitting on top of the Aurora backdrop */}
       <div className="relative z-10 flex flex-col min-h-screen w-full">
-        {/* Retro-Futuristic Holographic Scanlines & Noise Overlay */}
-        <div className="fixed inset-0 pointer-events-none z-40 select-none opacity-[0.02] mix-blend-overlay bg-[linear-gradient(rgba(18,16,16,0)_50%,_rgba(0,0,0,0.25)_50%),_linear-gradient(90deg,_rgba(255,0,0,0.06),_rgba(0,255,0,0.02),_rgba(0,0,255,0.06))] bg-[size:100%_4px,_3px_100%]" />
-        
-        {/* Subtle Noise Grid Film Grain Texture */}
-        <div 
-          className="fixed inset-0 pointer-events-none z-40 select-none opacity-[0.015] bg-[radial-gradient(#10b981_1px,transparent_1px)] bg-[size:16px_16px]" 
-          style={{ maskImage: 'radial-gradient(ellipse at center, black, transparent)' }}
-        />
-
         {/* Accessibility Focus Jump */}
         <SkipToContent />
 

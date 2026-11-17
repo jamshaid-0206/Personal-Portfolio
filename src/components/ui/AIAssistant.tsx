@@ -376,7 +376,7 @@ export function AIAssistant() {
             <SystemMonitor />
 
             {/* Messages body */}
-            <div data-lenis-prevent className="flex-1 overflow-y-auto p-4 space-y-4 font-mono scrollbar-thin scrollbar-thumb-emerald-950/40 scrollbar-track-transparent">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 font-mono scrollbar-thin scrollbar-thumb-emerald-950/40 scrollbar-track-transparent">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
