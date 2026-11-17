@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { SkipToContent } from '../ui/SkipToContent';
 import { CustomCursor } from '../ui/CustomCursor';
 import { AuroraBackground } from '../ui/AuroraBackground';
 import { ScrollProgressBar } from '../ui/ScrollProgressBar';
-import { AIAssistant } from '../ui/AIAssistant';
-import { EasterEggOverlay } from '../ui/EasterEggOverlay';
+// Non-critical overlays are code-split so they never block first paint
+const AIAssistant = lazy(() => import('../ui/AIAssistant').then((m) => ({ default: m.AIAssistant })));
+const EasterEggOverlay = lazy(() => import('../ui/EasterEggOverlay').then((m) => ({ default: m.EasterEggOverlay })));
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,12 +15,13 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-300 flex flex-col relative overflow-x-hidden selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300 flex flex-col relative overflow-x-clip selection:bg-emerald-500/30 selection:text-emerald-200">
       {/* Easter Egg Overlay HUD & Warp */}
-      <EasterEggOverlay />
-
-      {/* Persistent Holographic AI Companion */}
-      <AIAssistant />
+      <Suspense fallback={null}>
+        <EasterEggOverlay />
+        {/* Persistent Holographic AI Companion */}
+        <AIAssistant />
+      </Suspense>
 
       {/* Scroll Progress Indicator */}
       <ScrollProgressBar />

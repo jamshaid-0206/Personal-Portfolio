@@ -43,7 +43,7 @@ export function CustomCursor() {
     // Track mouse position
     const handleMouseMove = (e: MouseEvent) => {
       mouseRef.current = { x: e.clientX, y: e.clientY };
-      if (!isVisible) setIsVisible(true);
+      setIsVisible(true);
     };
 
     const handleMouseLeave = () => {
@@ -120,13 +120,14 @@ export function CustomCursor() {
       window.removeEventListener('mouseup', handleMouseUp);
       window.removeEventListener('mouseover', handleOver);
     };
-  }, [isVisible, isMobile]);
+  }, [isMobile]);
 
   // RequestAnimationFrame high performance animation sync loop
   useEffect(() => {
     if (isMobile || shouldReduceMotion) return;
 
     let rAFId: number;
+    let lastRect: { width: number; height: number; borderRadius: string } | null = null;
 
     const runLoop = () => {
       if (hoveredElement && document.body.contains(hoveredElement)) {
@@ -144,17 +145,23 @@ export function CustomCursor() {
         cursorY.set(magneticY);
 
         // Fetch precise style geometries to morph shape perfectly
-        const computedStyle = window.getComputedStyle(hoveredElement);
-        setElementRect({
-          width: rect.width,
-          height: rect.height,
-          borderRadius: computedStyle.borderRadius || '4px',
-        });
+        // Only update state when geometry actually changes (avoids 60fps re-renders)
+        if (!lastRect || lastRect.width !== rect.width || lastRect.height !== rect.height) {
+          lastRect = {
+            width: rect.width,
+            height: rect.height,
+            borderRadius: window.getComputedStyle(hoveredElement).borderRadius || '4px',
+          };
+          setElementRect(lastRect);
+        }
       } else {
         // Fallback to absolute standard tracking
         cursorX.set(mouseRef.current.x);
         cursorY.set(mouseRef.current.y);
-        setElementRect(null);
+        if (lastRect !== null) {
+          lastRect = null;
+          setElementRect(null);
+        }
       }
 
       rAFId = requestAnimationFrame(runLoop);
