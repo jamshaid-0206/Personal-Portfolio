@@ -5,6 +5,7 @@ import { photographerInfo } from '../../data/photographer';
 import { projects } from '../../data/projects';
 import { VoicePulseAnalyzer } from './VoicePulseAnalyzer';
 import { SystemMonitor } from './SystemMonitor';
+import { speakWithClonedVoice, stopVoice } from '../../lib/voice';
 
 interface Message {
   id: string;
@@ -65,18 +66,18 @@ export function AIAssistant() {
   // Handle saving of voice preferences to LocalStorage
   useEffect(() => {
     localStorage.setItem('jg_ai_assistant_muted', String(isMuted));
-    if (isMuted && typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+    if (isMuted) {
+      stopVoice();
       setIsSpeaking(false);
     }
   }, [isMuted]);
 
   // Clean speech synthesis helper that strips formatting, underscores, and custom technical markup
   const speakText = (text: string) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    if (typeof window === 'undefined') return;
 
-    // Terminate any active speech stream
-    window.speechSynthesis.cancel();
+    // Terminate any active speech (cloned voice or browser voice)
+    stopVoice();
 
     if (isMuted) {
       setIsSpeaking(false);
@@ -99,6 +100,18 @@ export function AIAssistant() {
       .replace(/\s+/g, ' ') // Collapse multiple whitespace blocks
       .trim();
 
+    // 1) Jamshaid's own ElevenLabs voice; 2) browser voice as a fallback.
+    speakWithClonedVoice(cleanText, {
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+    }).then((played) => {
+      if (!played) speakWithBrowserVoice(cleanText);
+    });
+  };
+
+  const speakWithBrowserVoice = (cleanText: string) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(cleanText);
 
     // Filter available English voices
@@ -155,17 +168,13 @@ export function AIAssistant() {
 
   // Clean up synthesis on unmount
   useEffect(() => {
-    return () => {
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-    };
+    return () => stopVoice();
   }, []);
 
   // Stop speaking when the panel is closed
   useEffect(() => {
-    if (!isOpen && typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+    if (!isOpen) {
+      stopVoice();
       setIsSpeaking(false);
     }
   }, [isOpen]);
@@ -228,10 +237,8 @@ export function AIAssistant() {
     if (!text.trim()) return;
 
     // Immediately stop any currently active speech when user initiates a new query
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-    }
+    stopVoice();
+    setIsSpeaking(false);
 
     const userMsg: Message = {
       id: Math.random().toString(),
